@@ -31,6 +31,17 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "uv"
+    directory: "/src/aws-mcp-server"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore(deps): update aws-mcp-server dependencies"
+    allow:
+      - dependency-name: "boto3"
+      - dependency-name: "botocore"
+    open-pull-requests-limit: 5
+
   - package-ecosystem: "npm"
     directories:
       - "**/*"

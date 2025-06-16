@@ -1,0 +1,21 @@
+repos:
+-   repo: local
+    hooks:
+        - id: metadata-script
+          name: ensure confirm-list up-to-date
+          entry: python src/aws-mcp-server/awslabs/aws_mcp_server/core/metadata/confirm_list.py --output src/aws-mcp-server/awslabs/aws_mcp_server/core/data/confirm_list.json
+          description: Ensure confirm-list is updated. If failed, review the generated change and add.
+          language: system
+          stages: [pre-commit]
+          always_run: true
+          require_serial: true
+          pass_filenames: false
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.11.12
+    hooks:
+        # Run the linter.
+        - id: ruff-check
+          args: [ --fix ]
+        # Run the formatter.
+        - id: ruff-format

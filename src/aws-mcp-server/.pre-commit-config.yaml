@@ -1,6 +1,12 @@
 repos:
 -   repo: local
     hooks:
+        - id: install-deps
+          name: Install project dependencies
+          entry: cd src/aws-mcp-server/awslabs/aws_mcp_server && pip install importlib_resources
+          language: system
+          require_serial: true
+          pass_filenames: false
         - id: metadata-script
           name: ensure confirm-list up-to-date
           entry: python src/aws-mcp-server/awslabs/aws_mcp_server/core/metadata/confirm_list.py --output src/aws-mcp-server/awslabs/aws_mcp_server/core/data/confirm_list.json

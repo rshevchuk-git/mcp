@@ -1,5 +1,5 @@
 import argparse
-import importlib.resources
+import importlib_resources
 import json
 import sys
 from awslabs.aws_mcp_server.core.common.models import ActionType, ApiType
@@ -48,7 +48,7 @@ def get_confirm_list():
     """Load and return the ConfirmList from the metadata file."""
     try:
         with (
-            importlib.resources.files('awslabs.aws_mcp_server.core')
+            importlib_resources.files('awslabs.aws_mcp_server.core')
             .joinpath(CONFIRM_LIST_FILE)
             .open() as stream
         ):
@@ -65,7 +65,7 @@ def main(output_path=None):
     output_file = output_path if output_path else DEFAULT_CONFIRM_LIST_OUT
 
     with (
-        importlib.resources.files('awslabs.aws_mcp_server.core')
+        importlib_resources.files('awslabs.aws_mcp_server.core')
         .joinpath(METADATA_FILE)
         .open() as stream
     ):

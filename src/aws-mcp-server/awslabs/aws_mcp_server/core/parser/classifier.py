@@ -1,4 +1,4 @@
-import importlib.resources
+import importlib_resources
 import json
 from ..common.models import (
     ActionType,
@@ -50,7 +50,7 @@ def _build_service_metadata():
     services: dict[str, dict[str, CommandClassification]] = defaultdict(dict)
 
     with (
-        importlib.resources.files('awslabs.aws_mcp_server.core')
+        importlib_resources.files('awslabs.aws_mcp_server.core')
         .joinpath(METADATA_FILE)
         .open() as stream
     ):

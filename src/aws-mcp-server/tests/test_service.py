@@ -159,8 +159,8 @@ def test_interpret_returns_missing_context_failures():
                 'DescribeEnvironments',
                 {
                     'environmentIds': [
-                        '7d61007bd98b4d589f1504af84c168de',
-                        'b181ffd35fe2457c8c5ae9d75edc068a',
+                        '7d61007bd98b4d589f1504af84c168de',  # pragma: allowlist secret
+                        'b181ffd35fe2457c8c5ae9d75edc068a',  # pragma: allowlist secret
                     ]
                 },
                 'us-east-1',
@@ -251,8 +251,8 @@ def test_interpret_injects_region():
                 'DescribeEnvironments',
                 {
                     'environmentIds': [
-                        '7d61007bd98b4d589f1504af84c168de',
-                        'b181ffd35fe2457c8c5ae9d75edc068a',
+                        '7d61007bd98b4d589f1504af84c168de',  # pragma: allowlist secret
+                        'b181ffd35fe2457c8c5ae9d75edc068a',  # pragma: allowlist secret
                     ]
                 },
                 'eu-south-1',
@@ -304,10 +304,14 @@ def test_interpret_injects_region():
         ),
         # This operation does not support limiting the number of results
         (
-            'aws cloud9 describe-environments --environment-ids 7d61007bd98b4d589f1504af84c168de',
+            'aws cloud9 describe-environments --environment-ids 7d61007bd98b4d589f1504af84c168de',  # pragma: allowlist secret
             (
                 'DescribeEnvironments',
-                {'environmentIds': ['7d61007bd98b4d589f1504af84c168de']},
+                {
+                    'environmentIds': [
+                        '7d61007bd98b4d589f1504af84c168de'  # pragma: allowlist secret
+                    ]  # pragma: allowlist secret
+                },  # pragma: allowlist secret
                 'us-east-1',
                 10,
                 'https://cloud9.us-east-1.amazonaws.com',

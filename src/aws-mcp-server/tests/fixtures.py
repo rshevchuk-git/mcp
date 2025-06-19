@@ -85,7 +85,10 @@ TEST_CREDENTIALS = {'access_key_id': 'test', 'secret_access_key': 'test', 'sessi
 orig = botocore.client.BaseClient._make_api_call
 
 CLOUD9_LIST_ENVIRONMENTS = {
-    'environmentIds': ['dc7ec5068da34567b72376837becd583', 'bfdc3c72123b4b918de2004b6d6e78ab'],
+    'environmentIds': [
+        'dc7ec5068da34567b72376837becd583',  # pragma: allowlist secret
+        'bfdc3c72123b4b918de2004b6d6e78ab',  # pragma: allowlist secret
+    ],  # pragma: allowlist secret
     'ResponseMetadata': {'HTTPStatusCode': 200},
 }
 
@@ -208,8 +211,8 @@ CW_DESCRIBE_ALARMS = {
 
 CLOUD9_DESCRIBE_ENVIRONMENTS = {
     'environments': [
-        {'id': '7d61007bd98b4d589f1504af84c168de'},
-        {'id': 'b181ffd35fe2457c8c5ae9d75edc068a'},
+        {'id': '7d61007bd98b4d589f1504af84c168de'},  # pragma: allowlist secret
+        {'id': 'b181ffd35fe2457c8c5ae9d75edc068a'},  # pragma: allowlist secret
     ],
     'ResponseMetadata': {'HTTPStatusCode': 200},
 }
@@ -253,7 +256,7 @@ LIST_OBJECTS_PAYLOAD = {
         {
             'Key': 'example-file-1.txt',
             'LastModified': '2025-01-08T15:30:15.000Z',
-            'ETag': '"d41d8cd98f00b204e9800998ecf8427e"',
+            'ETag': '"d41d8cd98f00b204e9800998ecf8427e"',  # pragma: allowlist secret
             'Size': 1024,
             'StorageClass': 'STANDARD',
             'Owner': {'DisplayName': 'example-owner', 'ID': 'exampleownerid12345678'},
@@ -261,7 +264,7 @@ LIST_OBJECTS_PAYLOAD = {
         {
             'Key': 'example-folder/example-file-2.jpg',
             'LastModified': '2025-01-09T10:15:30.000Z',
-            'ETag': '"6d0bb00954ceb7fbee436bb55a8397ab"',
+            'ETag': '"6d0bb00954ceb7fbee436bb55a8397ab"',  # pragma: allowlist secret
             'Size': 2048576,
             'StorageClass': 'STANDARD',
             'Owner': {'DisplayName': 'example-owner', 'ID': 'exampleownerid12345678'},
@@ -328,8 +331,8 @@ GET_BATCH_TRACES_PAYLOAD = {
             'Id': '1-5e3d83d7-826f745d84226d5e7f689f72',
             'LimitExceeded': False,
             'Segments': [
-                {'Document': 'doc1', 'Id': '3b58ef65f8a799a9'},
-                {'Document': 'doc2', 'Id': '1c2e5d67f9b8a0b1'},
+                {'Document': 'doc1', 'Id': '3b58ef65f8a799a9'},  # pragma: allowlist secret
+                {'Document': 'doc2', 'Id': '1c2e5d67f9b8a0b1'},  # pragma: allowlist secret
             ],
         },
         {

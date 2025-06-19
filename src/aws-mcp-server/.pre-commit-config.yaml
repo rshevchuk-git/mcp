@@ -10,12 +10,3 @@ repos:
           always_run: true
           require_serial: true
           pass_filenames: false
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.11.12
-    hooks:
-        # Run the linter.
-        - id: ruff-check
-          args: [ --fix ]
-        # Run the formatter.
-        - id: ruff-format

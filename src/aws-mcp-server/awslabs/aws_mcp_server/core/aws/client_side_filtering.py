@@ -1,4 +1,4 @@
-import importlib.resources
+import importlib_resources
 import jmespath
 import json
 from botocore import loaders
@@ -14,7 +14,7 @@ API_LIST_PATH = 'data/api_filter_parsing_config.json'
 
 def _load_api_list():
     with (
-        importlib.resources.files('awslabs.aws_mcp_server.core')
+        importlib_resources.files('awslabs.aws_mcp_server.core')
         .joinpath(API_LIST_PATH)
         .open() as stream
     ):

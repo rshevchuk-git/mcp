@@ -68,7 +68,7 @@ def test_confirm_list_has_method(sample_confirm_list_data):
     assert confirm_list.has('lambda', 'Invoke') is False
 
 
-@patch('importlib.resources.files')
+@patch('importlib_resources.files')
 def test_get_confirm_list(mock_resource_stream, sample_confirm_list_data):
     """Test get_confirm_list function."""
     # Create a mock for the file object
@@ -89,7 +89,7 @@ def test_get_confirm_list(mock_resource_stream, sample_confirm_list_data):
     assert 'RunInstances' in result['ec2']
 
 
-@patch('importlib.resources.files')
+@patch('importlib_resources.files')
 @patch('json.dump')
 @patch('builtins.open', new_callable=mock_open)
 def test_main_function(mock_file, mock_json_dump, mock_resource_stream, sample_api_metadata):

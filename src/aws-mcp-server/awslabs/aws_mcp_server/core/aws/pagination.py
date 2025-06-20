@@ -165,6 +165,9 @@ def build_result(
 
         elapsed_time = time.time() - start_time
         if _should_stop_early(elapsed_time, remaining_tokens, is_first_page):
+            if is_first_page:
+                # Setting resume_token manually because this is not populated if we only process the first page.
+                page_iterator.resume_token = page_iterator._get_next_token(page)
             break
 
     _finalize_result(result, page_iterator, pages_processed)

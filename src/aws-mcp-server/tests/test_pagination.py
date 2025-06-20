@@ -109,7 +109,7 @@ def test_build_result_max_tokens_first_page():
 
     mock_page_iter.__iter__.return_value = get_pages()
     mock_page_iter.result_keys = [jmespath.compile('Functions')]
-    mock_page_iter.resume_token = 'PaginationToken'
+    mock_page_iter.resume_token = None
     mock_paginator._pagination_cfg = {'output_token': 'NextToken'}
     mock_paginator.paginate.return_value = mock_page_iter
 

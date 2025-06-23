@@ -41,7 +41,8 @@ from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_rea
 from botocore.exceptions import NoCredentialsError
 from loguru import logger
 from mcp.server import FastMCP
-from typing import Any, cast
+from pydantic import Field
+from typing import Annotated, Any, cast
 
 
 # Configure Loguru logging
@@ -99,9 +100,6 @@ READ_OPERATIONS_INDEX: ReadOnlyOperations = ReadOnlyOperations()
     9. "Tag all EC2 instances in the 'production' environment with 'Environment=prod'"
     10. "Configure CloudWatch alarms for high CPU utilization on my RDS instance"
 
-    Args:
-        query: A natural language description of what you want to do in AWS. Should be detailed enough to capture the user's intent and any relevant context.
-
     Returns:
         A list of up to 10 most likely AWS CLI commands that could accomplish the task, including:
         - The CLI command
@@ -110,7 +108,14 @@ READ_OPERATIONS_INDEX: ReadOnlyOperations = ReadOnlyOperations()
         - Description of what the command does
     """,
 )
-def suggest_aws_commands(query: str) -> dict[str, Any]:
+def suggest_aws_commands(
+    query: Annotated[
+        str,
+        Field(
+            description="A natural language description of what you want to do in AWS. Should be detailed enough to capture the user's intent and any relevant context."
+        ),
+    ],
+) -> dict[str, Any]:
     """Suggest AWS CLI commands based on the provided query."""
     if not query.strip():
         return {'detail': 'Empty query provided.'}
@@ -148,38 +153,30 @@ def suggest_aws_commands(query: str) -> dict[str, Any]:
     2. Incorrect parameter values - ensure values match expected format
     3. Missing --region when operating across regions
 
-    Examples:
-    1. User query: "Show me all running EC2 instances in us-west-2"
-       Command: aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" --region us-west-2
-
-    2. User query: "Get the lifecycle policy for my S3 bucket named 'my-backups'"
-       Command: aws s3api get-bucket-lifecycle-configuration --bucket my-backups
-
-    3. User query: "Create a new IAM user 'new-service-account'"
-       Command: aws iam create-user --user-name new-service-account
-
-    4. User query: "List all Lambda functions with their memory configurations"
-       Command: aws lambda list-functions --query 'Functions[*].[FunctionName,MemorySize]' --output table
-
-    5. User query: "Show me all CloudWatch alarms that are currently in ALARM state"
-       Command: aws cloudwatch describe-alarms --state-value ALARM --query 'MetricAlarms[*].[AlarmName,StateReason,StateUpdatedTimestamp]' --output table
-
-    Tool Args:
-        cli_command: The complete AWS CLI command to execute. MUST start with "aws"
-        max_results: Optional limit for number of results (useful for pagination)
-        is_counting: Optional flag to enable resource counting operations
-        consent_token: if cli_command requires consent and the user has given explicit consent for a command, token from the previous tool use call
-
-
     Returns:
         CLI execution results with API response data or error message
     """,
 )
 def call_aws(
-    cli_command: str,
-    max_results: int | None = None,
-    is_counting: bool | None = None,
-    consent_token: str | None = None,
+    cli_command: Annotated[
+        str, Field(description='The complete AWS CLI command to execute. MUST start with "aws"')
+    ],
+    max_results: Annotated[
+        int | None,
+        Field(description='Optional limit for number of results (useful for pagination)'),
+    ] = None,
+    is_counting: Annotated[
+        bool | None,
+        Field(
+            description='Optional flag to enable resource counting operations. MUST use this for answering any questions related to counting (e.g. "How many xxx", "Count my xxx", "Number of xxx", etc.)'
+        ),
+    ] = None,
+    consent_token: Annotated[
+        str | None,
+        Field(
+            description='if cli_command requires consent and the user has given explicit consent for a command, token from the previous tool use call'
+        ),
+    ] = None,
 ) -> dict[str, Any]:
     """Call AWS with the given CLI command and return the result as a dictionary."""
     try:

@@ -19,7 +19,7 @@ jobs:
         run: |
           git lfs ls-files
           git lfs pointer --file="src/aws-mcp-server/trivy-results.sarif"
-          ls -l "src/aws-mcp-server/trivy-results.sarif'
+          ls -l "src/aws-mcp-server/trivy-results.sarif"
           echo "::group::Action Checkout"
           cat "src/aws-mcp-server/trivy-results.sarif"
           echo "::endgroup::"

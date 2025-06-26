@@ -44,11 +44,18 @@ jobs:
       security-events: write
     runs-on: ubuntu-latest
     steps:
+      - name: Get Checkout Depth
+        id: checkout-depth
+        run: |
+          # Fetch depth the number of commits in the PR and otherwise 1
+          echo "fetch-depth=$(( ${{ (github.event_name == 'pull_request' && github.event.pull_request.commits) || 0 }} + 1 ))" >> "${GITHUB_ENV}"
+
       - name: Checkout code
         id: checkout-code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           lfs: true
+          fetch-depth: ${{ steps.checkout-depth.outputs.fetch-depth || '1' }}
 
       - name: Build an image from Dockerfile
         working-directory: ${{ matrix.dockerfile }}

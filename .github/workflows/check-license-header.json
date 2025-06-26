@@ -10,7 +10,7 @@
       ".github/**",
       "docs/**",
       "**/*requirements.txt",
-      "**/trivy-results.json",
+      "**/trivy-results.sarif",
       "**/py.typed"
     ],
     "include": [
@@ -39,7 +39,7 @@
       ".github/**",
       "docs/**",
       "**/*requirements.txt",
-      "**/trivy-results.json",
+      "**/trivy-results.sarif",
       "**/py.typed"
     ]
   }

@@ -67,7 +67,7 @@ jobs:
         id: check-sarif-in-pr
         run: |
           # Check if trivy-results.sarif is in the PR changes
-          if [ git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -q "${{ matrix.dockerfile }}/trivy-results.sarif" ]; then
+          if git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -q "${{ matrix.dockerfile }}/trivy-results.sarif"; then
             echo "${{ matrix.dockerfile }}/trivy-results.sarif is in the PR changes"
             echo "sarif-in-pr=true" >> $GITHUB_OUTPUT
             exit 0

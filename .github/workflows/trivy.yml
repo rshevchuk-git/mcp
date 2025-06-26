@@ -70,6 +70,7 @@ jobs:
             cat "${{ matrix.dockerfile }}/trivy-results.sarif"
             echo "::endgroup::"
             git lfs ls-files
+            git config --list | grep "filter\.lfs\."
             git lfs checkout "${{ matrix.dockerfile }}/trivy-results.sarif"
             echo "::group::Here is the SARIF file after LFS pull"
             cat "${{ matrix.dockerfile }}/trivy-results.sarif"

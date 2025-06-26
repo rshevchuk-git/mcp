@@ -68,7 +68,16 @@ jobs:
         id: check-sarif-in-pr
         run: |
           # Check if trivy-results.sarif is in the PR changes
-          if git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ steps.checkout-code.outputs.commit }} | grep -q "${{ matrix.dockerfile }}/trivy-results.sarif"; then
+
+          echo "::group::Logging the issue for debugging purposes"
+          # DEBUG: Show the diff for debugging purposes
+          git log # DEBUG: Show git log for debugging purposes
+          git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} || true
+          git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ steps.checkout-code.outputs.commit }} || true
+          # Errors with "fatal: Invalid revision range" so using "HEAD" instead:
+          echo "::endgroup::"
+
+          if git diff --name-only ${{ github.event.pull_request.base.sha }}..HEAD | grep -q "${{ matrix.dockerfile }}/trivy-results.sarif"; then
             echo "${{ matrix.dockerfile }}/trivy-results.sarif is in the PR changes"
             echo "sarif-in-pr=true" >> $GITHUB_OUTPUT
             exit 0

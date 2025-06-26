@@ -45,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
+        id: checkout-code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           lfs: true
@@ -67,7 +68,7 @@ jobs:
         id: check-sarif-in-pr
         run: |
           # Check if trivy-results.sarif is in the PR changes
-          if git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -q "${{ matrix.dockerfile }}/trivy-results.sarif"; then
+          if git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ steps.checkout-code.outputs.commit }} | grep -q "${{ matrix.dockerfile }}/trivy-results.sarif"; then
             echo "${{ matrix.dockerfile }}/trivy-results.sarif is in the PR changes"
             echo "sarif-in-pr=true" >> $GITHUB_OUTPUT
             exit 0

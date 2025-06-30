@@ -22,31 +22,19 @@ jobs:
       - name: Should rebuild AWS MCP embeddings
         id: aws-mcp-changed
         run: |
-          echo "=== DEBUGGING CHANGE DETECTION ==="
-          echo "Event: ${{ github.event_name }}"
-          echo "Current SHA: $(git rev-parse HEAD)"
-          echo "Previous SHA: $(git rev-parse HEAD~1)"
-          
-          echo "=== GIT LOG (last 3 commits) ==="
-          git log --oneline -3
-          
-          echo "=== CHANGED FILES ==="
-          git diff --name-only HEAD~1 HEAD
-          
-          echo "=== FILES MATCHING PATTERN ==="
-          git diff --name-only HEAD~1 HEAD | grep "^src/aws-mcp-server/" || echo "No matches found"
-          
-          echo "=== GREP EXIT CODE ==="
-          git diff --name-only HEAD~1 HEAD | grep -q "^src/aws-mcp-server/"
-          echo "Grep exit code: $?"
-          
-          if git diff --name-only HEAD~1 HEAD | grep -q "^src/aws-mcp-server/"; then
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^src/aws-mcp-server/"; then
             echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-            echo "✅ Setting aws-mcp-changed=true"
           else
             echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-            echo "❌ Setting aws-mcp-changed=false"
           fi
+        else
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^src/aws-mcp-server/"; then
+            echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
+          fi
+        fi
       - name: Find Python packages
         id: find-packages
         working-directory: src

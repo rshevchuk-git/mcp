@@ -14,7 +14,6 @@
 
 import botocore.exceptions
 import jmespath
-from ..common.constraints import Constraint, verify_constraints_on_ir
 from ..common.errors import (
     CliParsingError,
     CommandValidationError,
@@ -73,7 +72,6 @@ def interpret_command(
     access_key_id: str,
     secret_access_key: str,
     session_token: str | None,
-    constraints: list[Constraint],
     default_region: str,
     max_results: int | None = None,
     max_tokens: int | None = None,
@@ -87,8 +85,6 @@ def interpret_command(
     The response contains any validation errors found during
     validating the command, as well as any errors that occur during interpretation.
     """
-    if not constraints:
-        raise ValueError('Cannot interpret commands without default constraints')
     translation = translate_cli_to_ir(cli_command)
 
     if translation.command is None:
@@ -110,12 +106,6 @@ def interpret_command(
         except ParseError as error:
             logger.info('Ignoring client-side filter: {}', client_side_query)
             logger.error('Client-side filter parsing error: {}', str(error))
-
-    failed_constraints = verify_constraints_on_ir(translation, constraints)
-    if failed_constraints:
-        return InterpretedProgram(
-            translation=translation, failed_constraints=failed_constraints, region_name=region
-        )
 
     try:
         response = interpret(

@@ -1,5 +1,5 @@
 import pytest
-from .fixtures import (
+from ..fixtures import (
     CW_DESCRIBE_ALARMS,
     EC2_DESCRIBE_INSTANCES,
     EMPTY_EC2_DESCRIBE_INSTANCES,

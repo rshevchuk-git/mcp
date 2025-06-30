@@ -1,9 +1,8 @@
 import json
 import pytest
-from .history_handler import history
+from ..history_handler import history
 from awslabs.aws_mcp_server.core.aws.driver import translate_cli_to_ir
 from awslabs.aws_mcp_server.core.aws.service import (
-    check_for_consent,
     interpret_command,
     is_operation_read_only,
     validate,
@@ -30,8 +29,6 @@ from tests.fixtures import (
     CLOUD9_PARAMS_MISSING_CONTEXT_FAILURES,
     CLOUDFORMATION_LIST_STACKS_FIRST_PAGE,
     EC2_DESCRIBE_INSTANCES,
-    EC2_WAIT_COMMAND_CLI,
-    EC2_WAIT_COMMAND_VALIDATION_FAILURES,
     GET_CALLER_IDENTITY_PAYLOAD,
     REDSHIFT_FIRST_PAGE,
     SSM_LIST_NODES_PAYLOAD,
@@ -43,7 +40,7 @@ from tests.fixtures import (
     patch_boto3_paginated_redshift,
 )
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 @pytest.mark.parametrize(
@@ -54,12 +51,6 @@ from unittest.mock import MagicMock, patch
             "The operation 'list-environments-1' for service 'cloud9' does not exist.",
             'cloud9',
             'list-environments-1',
-        ),
-        (
-            EC2_WAIT_COMMAND_CLI,
-            "The operation 'wait' for service 'ec2' is currently unsupported.",
-            'ec2',
-            'wait',
         ),
     ],
 )
@@ -629,7 +620,6 @@ def test_validate_success():
     'cli_command,validate_response',
     [
         (CLOUD9_PARAMS_CLI_NON_EXISTING_OPERATION, CLOUD9_PARAMS_CLI_VALIDATION_FAILURES),
-        (EC2_WAIT_COMMAND_CLI, EC2_WAIT_COMMAND_VALIDATION_FAILURES),
     ],
 )
 def test_validate_returns_validation_failures(cli_command, validate_response):
@@ -696,173 +686,6 @@ def test_validate_returns_ec2_validation_failures(cli_command, validation_failur
     validation_failures = response_json['validation_failures']
     assert len(validation_failures) == 1
     assert validation_failures[0]['reason'] == validation_failure_reason
-
-
-@patch('awslabs.aws_mcp_server.core.aws.service.token_manager')
-@patch('awslabs.aws_mcp_server.core.aws.service.confirm_list')
-def test_call_aws_mutating_action_no_token(mock_confirm_list, mock_token_manager):
-    """Test call_aws with a mutating action that requires consent but no token is provided."""
-    mock_confirm_list.has.return_value = True
-
-    # Mock IR with command metadata
-    mock_ir = MagicMock()
-    mock_ir.command_metadata = MagicMock()
-    mock_ir.command_metadata.service_sdk_name = 'ec2'
-    mock_ir.command_metadata.operation_sdk_name = 'terminate-instances'
-
-    # Mock token manager to indicate no valid token exists
-    mock_token_manager.has_valid_token_for_command.return_value = False
-    mock_token_manager.generate_token.return_value = 'new-consent-token-123'
-
-    # Execute
-    result = check_for_consent(
-        cli_command='aws ec2 terminate-instances --instance-ids i-1234567890abcdef0',
-        ir=mock_ir,
-        consent_token=None,
-    )
-
-    # Verify
-    assert result is not None
-    assert result.status == 'consent_required'
-    assert 'new-consent-token-123' in result.message
-    mock_confirm_list.has.assert_called_once_with(service='ec2', operation='terminate-instances')
-    mock_token_manager.has_valid_token_for_command.assert_called_once_with(
-        'aws ec2 terminate-instances --instance-ids i-1234567890abcdef0'
-    )
-    mock_token_manager.generate_token.assert_called_once_with(
-        'aws ec2 terminate-instances --instance-ids i-1234567890abcdef0'
-    )
-
-
-@patch('awslabs.aws_mcp_server.core.aws.service.token_manager')
-@patch('awslabs.aws_mcp_server.core.aws.service.confirm_list')
-def test_call_aws_mutating_action_with_valid_token(mock_confirm_list, mock_token_manager):
-    """Test call_aws with a mutating action and a valid consent token."""
-    mock_confirm_list.has.return_value = True
-
-    # Mock IR with command metadata
-    mock_ir = MagicMock()
-    mock_ir.command_metadata = MagicMock()
-    mock_ir.command_metadata.service_sdk_name = 'ec2'
-    mock_ir.command_metadata.operation_sdk_name = 'terminate-instances'
-
-    # Mock token manager to validate the token
-    mock_token_manager.validate_token.return_value = True
-
-    # Execute
-    result = check_for_consent(
-        cli_command='aws ec2 terminate-instances --instance-ids i-1234567890abcdef0',
-        ir=mock_ir,
-        consent_token='valid-token-123',
-    )
-
-    # Verify
-    assert result is None
-    mock_confirm_list.has.assert_called_once_with(service='ec2', operation='terminate-instances')
-    mock_token_manager.validate_token.assert_called_once_with(
-        'valid-token-123', 'aws ec2 terminate-instances --instance-ids i-1234567890abcdef0'
-    )
-
-
-@patch('awslabs.aws_mcp_server.core.aws.service.token_manager')
-@patch('awslabs.aws_mcp_server.core.aws.service.confirm_list')
-def test_call_aws_mutating_action_with_invalid_token(mock_confirm_list, mock_token_manager):
-    """Test call_aws with a mutating action and an invalid consent token."""
-    mock_confirm_list.has.return_value = True
-
-    # Mock IR with command metadata
-    mock_ir = MagicMock()
-    mock_ir.command_metadata = MagicMock()
-    mock_ir.command_metadata.service_sdk_name = 'ec2'
-    mock_ir.command_metadata.operation_sdk_name = 'terminate-instances'
-
-    # Mock token manager to invalidate the token
-    mock_token_manager.validate_token.return_value = False
-    mock_token_manager.has_valid_token_for_command.return_value = False
-    mock_token_manager.generate_token.return_value = 'new-consent-token-456'
-
-    # Execute with invalid consent token
-    result = check_for_consent(
-        cli_command='aws ec2 terminate-instances --instance-ids i-1234567890abcdef0',
-        ir=mock_ir,
-        consent_token='invalid-token-123',
-    )
-
-    # Verify
-    assert result is not None
-    assert result.status == 'consent_required'
-    assert "Consent token expired, invalid, or doesn't match" in result.message
-    assert 'new-consent-token-456' in result.message
-    mock_confirm_list.has.assert_called_once_with(service='ec2', operation='terminate-instances')
-    mock_token_manager.validate_token.assert_called_once_with(
-        'invalid-token-123', 'aws ec2 terminate-instances --instance-ids i-1234567890abcdef0'
-    )
-
-
-@patch('awslabs.aws_mcp_server.core.aws.service.token_manager')
-@patch('awslabs.aws_mcp_server.core.aws.service.confirm_list')
-def test_call_aws_mutating_action_with_previous_valid_token(mock_confirm_list, mock_token_manager):
-    """Test call_aws with a mutating action and a previously valid token for the command."""
-    mock_confirm_list.has.return_value = True
-
-    # Mock IR with command metadata
-    mock_ir = MagicMock()
-    mock_ir.command_metadata = MagicMock()
-    mock_ir.command_metadata.service_sdk_name = 'ec2'
-    mock_ir.command_metadata.operation_sdk_name = 'terminate-instances'
-
-    # Mock token manager to indicate a valid token exists
-    mock_token_manager.validate_token.return_value = False  # No token provided
-    mock_token_manager.has_valid_token_for_command.return_value = True  # But previous token exists
-
-    # Execute without consent token (but previous token exists)
-    result = check_for_consent(
-        cli_command='aws ec2 terminate-instances --instance-ids i-1234567890abcdef0',
-        ir=mock_ir,
-        consent_token=None,
-    )
-
-    # Verify
-    assert result is None
-    mock_confirm_list.has.assert_called_once_with(service='ec2', operation='terminate-instances')
-    mock_token_manager.has_valid_token_for_command.assert_called_once_with(
-        'aws ec2 terminate-instances --instance-ids i-1234567890abcdef0'
-    )
-
-
-@patch('awslabs.aws_mcp_server.core.aws.service.token_manager')
-@patch('awslabs.aws_mcp_server.core.aws.service.confirm_list')
-def test_call_aws_unknown_action_type(mock_confirm_list, mock_token_manager):
-    """Test call_aws with an unknown action type that requires consent."""
-    mock_confirm_list.has.return_value = True
-
-    # Mock IR with command metadata
-    mock_ir = MagicMock()
-    mock_ir.command_metadata = MagicMock()
-    mock_ir.command_metadata.service_sdk_name = 'custom-service'
-    mock_ir.command_metadata.operation_sdk_name = 'custom-operation'
-
-    # Mock token manager
-    mock_token_manager.has_valid_token_for_command.return_value = False
-    mock_token_manager.generate_token.return_value = 'new-consent-token-789'
-
-    # Execute
-    result = check_for_consent(
-        cli_command='aws custom-service custom-operation',
-        ir=mock_ir,
-        consent_token=None,
-    )
-
-    # Verify
-    assert result is not None
-    assert result.status == 'consent_required'
-    assert 'new-consent-token-789' in result.message
-    mock_confirm_list.has.assert_called_once_with(
-        service='custom-service', operation='custom-operation'
-    )
-    mock_token_manager.has_valid_token_for_command.assert_called_once_with(
-        'aws custom-service custom-operation'
-    )
 
 
 def test_is_operation_read_only_returns_true_for_read_only_operation():

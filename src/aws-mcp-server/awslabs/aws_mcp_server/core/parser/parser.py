@@ -29,12 +29,10 @@ from ..common.errors import (
     DeniedGlobalArgumentsError,
     ExpectedArgumentError,
     InvalidChoiceForParameterError,
-    InvalidCustomCommandError,
     InvalidParametersReceivedError,
     InvalidServiceError,
     InvalidServiceOperationError,
     InvalidTypeForParameterError,
-    InvalidUseOfS3ServiceError,
     MalformedFilterError,
     MissingOperationError,
     MissingRequiredParametersError,
@@ -56,7 +54,6 @@ from awscli.argparser import ArgTableArgParser, CommandAction, MainArgParser
 from awscli.argprocess import ParamError
 from awscli.arguments import BaseCLIArgument, CLIArgument
 from awscli.clidriver import ServiceCommand
-from awscli.customizations.commands import BasicCommand
 from botocore.exceptions import ParamValidationError, UndefinedModelAttributeError
 from botocore.model import OperationModel, ServiceModel
 from collections.abc import Generator
@@ -164,16 +161,32 @@ class ArgTableParser(ArgTableArgParser):
         pass
 
     def _identify_missing_parameters(self, operation_args: Namespace) -> Generator[str]:
-        required_args = {
+        # Check for required named arguments (those with option_strings)
+        required_named_args = {
             action.option_strings[0]
             for action in self._actions
             if action.option_strings and action.required
         }
+
+        # Check for required positional arguments (those without option_strings but with nargs)
+        required_positional_args = {
+            action.dest
+            for action in self._actions
+            if not action.option_strings
+            and action.nargs
+            and action.nargs != '?'
+            and action.nargs != '*'
+        }
+
         for name, value in vars(operation_args).items():
             if value is None:
+                # Check if it's a required named argument
                 cli_param = f'--{name.replace("_", "-")}'
-                if cli_param in required_args:
+                if cli_param in required_named_args:
                     yield cli_param
+                # Check if it's a required positional argument
+                elif name in required_positional_args:
+                    yield name
 
     def _get_value(self, action, arg_string):
         try:
@@ -252,7 +265,10 @@ def parse(cli_command: str) -> IRCommand:
     if isinstance(service_command, ServiceCommand):
         return _handle_service_command(service_command, global_args, remaining)
 
-    return _handle_custom_command(service_command)
+    if service_command.name in _denied_custom_services:
+        raise InvalidServiceError(service_command.name)
+
+    return _handle_awscli_customization(global_args, remaining, tokens[0])
 
 
 def _handle_service_command(
@@ -272,7 +288,7 @@ def _handle_service_command(
         # This command is not supported for this service
         raise InvalidServiceOperationError(service, operation)
     if not hasattr(operation_command, '_operation_model'):
-        raise InvalidCustomCommandError(service, operation)
+        return _handle_awscli_customization(global_args, remaining, service_command.name)
     command_metadata = CommandMetadata(
         service_sdk_name=service_command.service_model.service_name,
         service_full_sdk_name=_service_full_name(service_command.service_model),
@@ -333,16 +349,135 @@ def _handle_service_command(
     )
 
 
-def _handle_custom_command(
-    service_command: BasicCommand,
-):
-    if service_command.name in _denied_custom_services:
-        raise InvalidServiceError(service_command.name)
-    if service_command.name == 's3':
-        # S3 commands boil down to Python classes which result in multiple S3 API calls
-        # We cannot deterministically translate these to single S3 API calls.
-        raise InvalidUseOfS3ServiceError(service_command.name)
-    raise NotImplementedError('Not implemented yet')
+def _handle_awscli_customization(
+    global_args: argparse.Namespace,
+    remaining: list[str],
+    service: str,
+) -> IRCommand:
+    """This function handles awscli customizations (like aws s3 ls, aws s3 cp, aws s3 mv)."""
+    if not remaining:
+        raise MissingOperationError()
+
+    operation = remaining[0]
+
+    command_table = driver._get_command_table()
+    service_command = command_table.get(service)
+
+    # For custom commands, we need to check if the operation exists in the service's command table
+    if hasattr(service_command, '_get_command_table'):
+        service_command_table = service_command._get_command_table()
+        operation_command = service_command_table.get(operation)
+    elif hasattr(service_command, 'subcommand_table'):
+        # Handle S3-like services that use subcommand_table
+        service_command_table = service_command.subcommand_table
+        operation_command = service_command_table.get(operation)
+    else:
+        raise InvalidServiceOperationError(service, operation)
+
+    if not operation_command:
+        raise InvalidServiceOperationError(service, operation)
+
+    if not hasattr(operation_command, '_operation_model'):
+        return _validate_customization_arguments(
+            operation_command, global_args, remaining, service, operation
+        )
+
+    raise InvalidServiceOperationError(service, operation)
+
+
+def contains_subcommand(operation_command, remaining: list[str]) -> bool:
+    """Check if the operation command has subcommands and the remaining args contain a subcommand."""
+    return (
+        hasattr(operation_command, 'subcommand_table')
+        and operation_command.subcommand_table
+        and len(remaining) > 1
+        and not remaining[1].startswith('--')
+    )
+
+
+def _parse_customization_parameters(
+    operation_command,
+    command_metadata: CommandMetadata,
+    operation_args: list[str],
+    service: str,
+    operation: str,
+) -> dict[str, Any]:
+    """Parse parameters for a custom command using its argument table."""
+    if not hasattr(operation_command, 'arg_table'):
+        raise InvalidServiceOperationError(service, operation)
+
+    operation_parser = ArgTableParser(operation_command.arg_table)
+    parsed_args = operation_parser.parse_operation_args(command_metadata, operation_args)
+
+    _handle_invalid_parameters(command_metadata, service, operation, parsed_args)
+
+    parameters = {
+        f'--{key.replace("_", "-")}': value
+        for key, value in vars(parsed_args.operation_args).items()
+        if value is not None
+    }
+
+    return parameters
+
+
+def _validate_customization_arguments(
+    operation_command,
+    global_args: argparse.Namespace,
+    remaining: list[str],
+    service: str,
+    operation: str,
+) -> IRCommand:
+    """Validate arguments for awscli customizations using their argument table."""
+    _validate_global_args(service, global_args)
+    global_args.region = getattr(global_args, 'region', None)
+
+    if contains_subcommand(operation_command, remaining):
+        subcommand_name = remaining[1]
+        subcommand = operation_command.subcommand_table.get(subcommand_name)
+
+        if not subcommand:
+            raise InvalidServiceOperationError(service, f'{operation} {subcommand_name}')
+
+        # Update the operation name to include the subcommand
+        full_operation = f'{operation} {subcommand_name}'
+        command_metadata = CommandMetadata(
+            service_sdk_name=service,
+            service_full_sdk_name=None,
+            operation_sdk_name=full_operation,
+        )
+
+        # Parse the remaining arguments (skip the operation and subcommand names)
+        operation_args = remaining[2:] if len(remaining) > 2 else []
+        parameters = _parse_customization_parameters(
+            subcommand, command_metadata, operation_args, service, full_operation
+        )
+
+        return _construct_command(
+            command_metadata=command_metadata,
+            global_args=global_args,
+            parameters=parameters,
+            is_awscli_customization=True,
+        )
+    else:
+        # This is a regular custom command without subcommands (or invalid subcommand)
+        # Parse the remaining arguments (skip the operation name)
+        command_metadata = CommandMetadata(
+            service_sdk_name=service,
+            service_full_sdk_name=None,
+            operation_sdk_name=operation,
+        )
+
+        operation_args = remaining[1:] if len(remaining) > 1 else []
+        parameters = _parse_customization_parameters(
+            operation_command, command_metadata, operation_args, service, operation
+        )
+
+        return _construct_command(
+            command_metadata=command_metadata,
+            global_args=global_args,
+            parameters=parameters,
+            is_awscli_customization=True,
+        )
 
 
 def _handle_invalid_parameters(
@@ -488,6 +623,7 @@ def _construct_command(
     command_metadata: CommandMetadata,
     global_args: argparse.Namespace,
     parameters: dict[str, Any],
+    is_awscli_customization: bool = False,
 ) -> IRCommand:
     # Verify the service actually exists in this region
     region = getattr(global_args, 'region', None)
@@ -500,6 +636,7 @@ def _construct_command(
         parameters=parameters,
         region=region,
         client_side_query=client_side_query,
+        is_awscli_customization=is_awscli_customization,
     )
 
 

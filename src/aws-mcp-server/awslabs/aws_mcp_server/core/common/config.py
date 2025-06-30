@@ -17,6 +17,7 @@ import os
 
 TRUTHY_VALUES = frozenset(['true', 'yes', '1'])
 READ_ONLY_KEY = 'READ_OPERATIONS_ONLY'
+OPT_IN_TELEMETRY_KEY = 'AWS_MCP_TELEMETRY'
 
 
 def get_env_bool(env_key: str, default: bool) -> bool:
@@ -27,6 +28,6 @@ def get_env_bool(env_key: str, default: bool) -> bool:
 FASTMCP_LOG_LEVEL = os.getenv('FASTMCP_LOG_LEVEL', 'WARNING')
 DEFAULT_REGION = os.getenv('AWS_REGION')
 MAX_OUTPUT_TOKENS = os.getenv('MAX_OUTPUT_TOKENS')
-BYPASS_TOOL_CONSENT = get_env_bool('BYPASS_TOOL_CONSENT', False)
-READ_OPERATIONS_ONLY_MODE = get_env_bool(READ_ONLY_KEY, True)
+READ_OPERATIONS_ONLY_MODE = get_env_bool(READ_ONLY_KEY, False)
 RAG_TYPE = os.getenv('RAG_TYPE', 'DENSE_RETRIEVER')
+OPT_IN_TELEMETRY = get_env_bool(OPT_IN_TELEMETRY_KEY, False)

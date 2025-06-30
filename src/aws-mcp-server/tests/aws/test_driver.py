@@ -1,14 +1,13 @@
 import pytest
 from awslabs.aws_mcp_server.core.aws.driver import IRTranslation, translate_cli_to_ir
+from awslabs.aws_mcp_server.core.common.command import IRCommand
 from awslabs.aws_mcp_server.core.common.command_metadata import CommandMetadata
 from awslabs.aws_mcp_server.core.common.errors import (
     DeniedGlobalArgumentsError,
     ExpectedArgumentError,
-    InvalidCustomCommandError,
     InvalidParametersReceivedError,
     InvalidServiceError,
     InvalidServiceOperationError,
-    InvalidUseOfS3ServiceError,
     MalformedFilterError,
     MissingRequiredParametersError,
     ParameterSchemaValidationError,
@@ -38,16 +37,38 @@ from tests.fixtures import S3_CLI_NO_REGION
         # s3 is valid but it is not a real service API - it boils down to multiple API calls to s3api
         (
             'aws s3 ls s3://flock-datasets-us-west-2-516690746032',
-            IRTranslation(validation_failures=[InvalidUseOfS3ServiceError('s3').as_failure()]),
+            IRTranslation(
+                command=IRCommand(
+                    command_metadata=CommandMetadata('s3', None, 'ls'),
+                    parameters={},
+                    client_side_query=None,
+                    is_awscli_customization=True,
+                ),
+                command_metadata=CommandMetadata('s3', None, 'ls'),
+            ),
         ),
         (
             'aws s3 ls',
-            IRTranslation(validation_failures=[InvalidUseOfS3ServiceError('s3').as_failure()]),
+            IRTranslation(
+                command=IRCommand(
+                    command_metadata=CommandMetadata('s3', None, 'ls'),
+                    parameters={},
+                    client_side_query=None,
+                    is_awscli_customization=True,
+                ),
+                command_metadata=CommandMetadata('s3', None, 'ls'),
+            ),
         ),
         (
             'aws dynamodb wait table-exists --table-name MyTable',
             IRTranslation(
-                unsupported_translation=InvalidCustomCommandError('dynamodb', 'wait').as_failure()
+                command=IRCommand(
+                    command_metadata=CommandMetadata('dynamodb', None, 'wait table-exists'),
+                    parameters={'--table-name': 'MyTable'},
+                    client_side_query=None,
+                    is_awscli_customization=True,
+                ),
+                command_metadata=CommandMetadata('dynamodb', None, 'wait table-exists'),
             ),
         ),
         (

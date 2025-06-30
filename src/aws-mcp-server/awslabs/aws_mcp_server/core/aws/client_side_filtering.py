@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib_resources
+import importlib.resources
 import jmespath
 import json
 from botocore import loaders
@@ -28,7 +28,7 @@ API_LIST_PATH = 'data/api_filter_parsing_config.json'
 
 def _load_api_list():
     with (
-        importlib_resources.files('awslabs.aws_mcp_server.core')
+        importlib.resources.files('awslabs.aws_mcp_server.core')
         .joinpath(API_LIST_PATH)
         .open() as stream
     ):

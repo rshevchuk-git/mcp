@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib_resources
+import importlib.resources
 import json
 from ..common.models import (
     ActionType,
@@ -64,7 +64,7 @@ def _build_service_metadata():
     services: dict[str, dict[str, CommandClassification]] = defaultdict(dict)
 
     with (
-        importlib_resources.files('awslabs.aws_mcp_server.core')
+        importlib.resources.files('awslabs.aws_mcp_server.core')
         .joinpath(METADATA_FILE)
         .open() as stream
     ):

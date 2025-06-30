@@ -40,7 +40,7 @@ from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
 from botocore.exceptions import NoCredentialsError
 from loguru import logger
-from mcp.server.fastmcp import FastMCP, Context
+from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
 from typing import Annotated, Any, cast
 
@@ -182,14 +182,18 @@ async def call_aws(
         ir_validation = validate(ir)
 
         if ir_validation.validation_failed:
-            error_message = f'Error while validating the command: {ir_validation.model_dump_json()}'
+            error_message = (
+                f'Error while validating the command: {ir_validation.model_dump_json()}'
+            )
             await ctx.error(error_message)
             return AwsMcpServerErrorResponse(
                 detail=error_message,
             )
 
         if READ_OPERATIONS_ONLY_MODE and not is_operation_read_only(ir, READ_OPERATIONS_INDEX):
-            error_message = 'Execution of this operation is not allowed because read only mode is enabled. '
+            error_message = (
+                'Execution of this operation is not allowed because read only mode is enabled. '
+            )
             f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'
             await ctx.error(error_message)
             return AwsMcpServerErrorResponse(
@@ -213,7 +217,9 @@ async def call_aws(
         creds = get_local_credentials()
 
         if ir.command and ir.command.is_awscli_customization:
-            response: AwsCliAliasResponse | AwsMcpServerErrorResponse = execute_awscli_customization(cli_command)
+            response: AwsCliAliasResponse | AwsMcpServerErrorResponse = (
+                execute_awscli_customization(cli_command)
+            )
             if response is AwsMcpServerErrorResponse:
                 await ctx.error(response.detail)
             return response

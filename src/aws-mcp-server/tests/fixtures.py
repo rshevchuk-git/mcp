@@ -41,7 +41,6 @@ CLOUD9_PARAMS_MISSING_CONTEXT_FAILURES = {
         'api_type': 'management',
         'action_types': [ActionType.UNKNOWN.value],
     },
-    'failed_constraints': [],
     'missing_context_failures': [
         {
             'reason': "The following parameters are missing for service 'cloud9' and operation 'create-environment-ec2': '--image-id'",
@@ -60,7 +59,6 @@ CLOUD9_PARAMS_MISSING_CONTEXT_FAILURES = {
 CLOUD9_PARAMS_CLI_NON_EXISTING_OPERATION = 'aws cloud9 list-environments-1'
 CLOUD9_PARAMS_CLI_VALIDATION_FAILURES = {
     'classification': None,
-    'failed_constraints': [],
     'validation_failures': [
         {
             'reason': "The operation 'list-environments-1' for service 'cloud9' does not exist.",

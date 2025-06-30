@@ -15,12 +15,6 @@
 import boto3
 import contextlib
 from ..aws.services import driver
-from ..common.constraints import (
-    AllowEverything,
-    Constraint,
-    ValidationsConfiguration,
-    verify_constraints_on_ir,
-)
 from ..common.errors import Failure
 from ..common.models import (
     AwsCliAliasResponse,
@@ -43,7 +37,7 @@ from ..parser.lexer import split_cli_command
 from .driver import interpret_command as _interpret_command
 from botocore.exceptions import NoCredentialsError
 from io import StringIO
-from typing import Any, cast
+from typing import Any
 
 
 def get_local_credentials() -> Credentials:
@@ -84,18 +78,10 @@ def validate(ir: IRTranslation) -> ProgramValidationResponse:
         else None
     )
 
-    # If command is invalid, we can't classify it properly
-    failed_constraints = (
-        []
-        if ir.validation_or_translation_failures
-        else verify_constraints_on_ir(ir, cast(list[Constraint], ValidationsConfiguration))
-    )
-
     return ProgramValidationResponse(
         missing_context_failures=_to_missing_context_failures(ir.missing_context_failures),
         validation_failures=_to_validation_failures(ir.validation_or_translation_failures),
         classification=classification,
-        failed_constraints=failed_constraints,
     )
 
 
@@ -140,7 +126,6 @@ def interpret_command(
         access_key_id=credentials.access_key_id,
         secret_access_key=credentials.secret_access_key,
         session_token=credentials.session_token,
-        constraints=[AllowEverything()],
         default_region=default_region,
         max_results=max_results,
         max_tokens=max_tokens,

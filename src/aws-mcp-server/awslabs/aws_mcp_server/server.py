@@ -202,7 +202,7 @@ def call_aws(
     try:
         creds = get_local_credentials()
 
-        if ir.command.is_awscli_customization:
+        if ir.command and ir.command.is_awscli_customization:
             return execute_awscli_customization(cli_command)
 
         return interpret_command(
@@ -212,7 +212,7 @@ def call_aws(
             max_results=max_results,
             max_tokens=int(MAX_OUTPUT_TOKENS) if MAX_OUTPUT_TOKENS else None,
             is_counting=is_counting,
-        ).model_dump()
+        )
     except NoCredentialsError:
         return AwsMcpServerErrorResponse(
             detail='Error while executing the command: No AWS credentials found. '

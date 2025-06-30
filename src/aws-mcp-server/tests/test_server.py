@@ -6,7 +6,7 @@ from awslabs.aws_mcp_server.core.common.models import (
 )
 from awslabs.aws_mcp_server.server import call_aws
 from botocore.exceptions import NoCredentialsError
-from tests.fixtures import TEST_CREDENTIALS
+from tests.fixtures import TEST_CREDENTIALS, DummyCtx
 from unittest.mock import MagicMock, patch
 
 
@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
 @patch('awslabs.aws_mcp_server.server.is_operation_read_only')
-def test_call_aws_success(
+async def test_call_aws_success(
     mock_is_operation_read_only,
     mock_translate_cli_to_ir,
     mock_validate,
@@ -57,7 +57,7 @@ def test_call_aws_success(
     mock_validate.return_value = mock_response
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify - the result should be the ProgramInterpretationResponse object
     assert result == mock_result
@@ -73,7 +73,7 @@ def test_call_aws_success(
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
 @patch('awslabs.aws_mcp_server.server.is_operation_read_only')
-def test_call_aws_with_mutating_action(
+async def test_call_aws_with_mutating_action(
     mock_is_operation_read_only,
     mock_translate_cli_to_ir,
     mock_validate,
@@ -114,7 +114,7 @@ def test_call_aws_with_mutating_action(
     mock_validate.return_value = mock_response
 
     # Execute
-    result = call_aws('aws s3api create-bucket --bucket somebucket')
+    result = await call_aws('aws s3api create-bucket --bucket somebucket', DummyCtx())
 
     # Verify that no consent was requested
     assert result == mock_result
@@ -125,7 +125,7 @@ def test_call_aws_with_mutating_action(
 
 
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
-def test_call_aws_validation_error_awsmcp_error(mock_translate_cli_to_ir):
+async def test_call_aws_validation_error_awsmcp_error(mock_translate_cli_to_ir):
     """Test call_aws returns error details for AwsMcpError during validation."""
     mock_error = AwsMcpError('Invalid command syntax')
     mock_failure = MagicMock()
@@ -134,7 +134,7 @@ def test_call_aws_validation_error_awsmcp_error(mock_translate_cli_to_ir):
     mock_translate_cli_to_ir.side_effect = mock_error
 
     # Execute
-    result = call_aws('aws invalid-service invalid-operation')
+    result = await call_aws('aws invalid-service invalid-operation', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -144,12 +144,12 @@ def test_call_aws_validation_error_awsmcp_error(mock_translate_cli_to_ir):
 
 
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
-def test_call_aws_validation_error_generic_exception(mock_translate_cli_to_ir):
+async def test_call_aws_validation_error_generic_exception(mock_translate_cli_to_ir):
     """Test call_aws returns error details for generic exception during validation."""
     mock_translate_cli_to_ir.side_effect = ValueError('Generic validation error')
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -161,7 +161,7 @@ def test_call_aws_validation_error_generic_exception(mock_translate_cli_to_ir):
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
 @patch('awslabs.aws_mcp_server.server.is_operation_read_only')
-def test_call_aws_no_credentials_error(
+async def test_call_aws_no_credentials_error(
     mock_is_operation_read_only, mock_translate_cli_to_ir, mock_validate, mock_get_creds
 ):
     """Test call_aws returns error when no AWS credentials are found."""
@@ -186,7 +186,7 @@ def test_call_aws_no_credentials_error(
     mock_get_creds.side_effect = NoCredentialsError()
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -202,7 +202,7 @@ def test_call_aws_no_credentials_error(
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
 @patch('awslabs.aws_mcp_server.server.is_operation_read_only')
-def test_call_aws_execution_error_awsmcp_error(
+async def test_call_aws_execution_error_awsmcp_error(
     mock_is_operation_read_only,
     mock_translate_cli_to_ir,
     mock_validate,
@@ -237,7 +237,7 @@ def test_call_aws_execution_error_awsmcp_error(
     mock_interpret.side_effect = mock_error
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -251,7 +251,7 @@ def test_call_aws_execution_error_awsmcp_error(
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
 @patch('awslabs.aws_mcp_server.server.is_operation_read_only')
-def test_call_aws_execution_error_generic_exception(
+async def test_call_aws_execution_error_generic_exception(
     mock_is_operation_read_only,
     mock_translate_cli_to_ir,
     mock_validate,
@@ -282,7 +282,7 @@ def test_call_aws_execution_error_generic_exception(
     mock_interpret.side_effect = RuntimeError('Generic execution error')
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -290,12 +290,12 @@ def test_call_aws_execution_error_generic_exception(
     )
 
 
-def test_call_aws_non_aws_command():
+async def test_call_aws_non_aws_command():
     """Test call_aws with command that doesn't start with 'aws'."""
     with patch('awslabs.aws_mcp_server.server.translate_cli_to_ir') as mock_translate_cli_to_ir:
         mock_translate_cli_to_ir.side_effect = ValueError("Command must start with 'aws'")
 
-        result = call_aws('s3api list-buckets')
+        result = await call_aws('s3api list-buckets', DummyCtx())
 
         assert result == AwsMcpServerErrorResponse(
             detail="Error while validating the command: Command must start with 'aws'"
@@ -306,7 +306,7 @@ def test_call_aws_non_aws_command():
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
 @patch('awslabs.aws_mcp_server.server.is_operation_read_only')
 @patch('awslabs.aws_mcp_server.server.READ_OPERATIONS_ONLY_MODE')
-def test_when_operation_is_not_allowed(
+async def test_when_operation_is_not_allowed(
     mock_read_operations_only_mode,
     mock_is_operation_read_only,
     mock_translate_cli_to_ir,
@@ -334,7 +334,7 @@ def test_when_operation_is_not_allowed(
     mock_is_operation_read_only.return_value = False
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # verify
     assert result == AwsMcpServerErrorResponse(
@@ -344,7 +344,7 @@ def test_when_operation_is_not_allowed(
 
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
-def test_call_aws_validation_failures(mock_translate_cli_to_ir, mock_validate):
+async def test_call_aws_validation_failures(mock_translate_cli_to_ir, mock_validate):
     """Test call_aws returns error for validation failures."""
     # Mock IR with command metadata
     mock_ir = MagicMock()
@@ -365,7 +365,7 @@ def test_call_aws_validation_failures(mock_translate_cli_to_ir, mock_validate):
     mock_validate.return_value = mock_response
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -377,7 +377,7 @@ def test_call_aws_validation_failures(mock_translate_cli_to_ir, mock_validate):
 
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
-def test_call_aws_failed_constraints(mock_translate_cli_to_ir, mock_validate):
+async def test_call_aws_failed_constraints(mock_translate_cli_to_ir, mock_validate):
     """Test call_aws returns error for failed constraints."""
     # Mock IR with command metadata
     mock_ir = MagicMock()
@@ -398,7 +398,7 @@ def test_call_aws_failed_constraints(mock_translate_cli_to_ir, mock_validate):
     mock_validate.return_value = mock_response
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(
@@ -410,7 +410,7 @@ def test_call_aws_failed_constraints(mock_translate_cli_to_ir, mock_validate):
 
 @patch('awslabs.aws_mcp_server.server.validate')
 @patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
-def test_call_aws_both_validation_failures_and_constraints(
+async def test_call_aws_both_validation_failures_and_constraints(
     mock_translate_cli_to_ir, mock_validate
 ):
     """Test call_aws returns error for both validation failures and failed constraints."""
@@ -431,7 +431,7 @@ def test_call_aws_both_validation_failures_and_constraints(
     mock_validate.return_value = mock_response
 
     # Execute
-    result = call_aws('aws s3api list-buckets')
+    result = await call_aws('aws s3api list-buckets', DummyCtx())
 
     # Verify
     assert result == AwsMcpServerErrorResponse(

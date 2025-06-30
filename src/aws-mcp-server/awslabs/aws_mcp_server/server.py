@@ -193,8 +193,8 @@ async def call_aws(
         if READ_OPERATIONS_ONLY_MODE and not is_operation_read_only(ir, READ_OPERATIONS_INDEX):
             error_message = (
                 'Execution of this operation is not allowed because read only mode is enabled. '
+                f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'
             )
-            f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'
             await ctx.error(error_message)
             return AwsMcpServerErrorResponse(
                 detail=error_message,
@@ -233,9 +233,11 @@ async def call_aws(
             is_counting=is_counting,
         )
     except NoCredentialsError:
-        error_message = 'Error while executing the command: No AWS credentials found. '
-        "Please configure your AWS credentials using 'aws configure' "
-        'or set appropriate environment variables.'
+        error_message = (
+            'Error while executing the command: No AWS credentials found. '
+            "Please configure your AWS credentials using 'aws configure' "
+            'or set appropriate environment variables.'
+        )
         await ctx.error(error_message)
         return AwsMcpServerErrorResponse(
             detail=error_message,

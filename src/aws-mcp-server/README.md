@@ -117,4 +117,3 @@ To make changes to this MCP locally and run it:
    ```bash
    uv run awslabs.aws-mcp-server
    ```
-

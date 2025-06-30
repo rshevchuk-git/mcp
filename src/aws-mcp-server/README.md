@@ -6,7 +6,7 @@ The AWS MCP Server enables AI assistants to interact with AWS services and resou
 
 This server bridges the gap between AI assistants and AWS services, allowing you to create, update, and manage AWS resources across all available services. It helps with AWS CLI command selection and provides access to the latest AWS API features and services, even those released after an AI model's knowledge cutoff date. The server implements safety measures to ensure that critical operations require explicit user approval before execution.
 
-
+dsds
 ## Features
 
 - **Comprehensive AWS CLI Support**: Supports all commands available in the latest AWS CLI version, ensuring access to the most recent AWS services and features

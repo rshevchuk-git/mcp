@@ -39,6 +39,7 @@ This server bridges the gap between AI assistants and AWS services, allowing you
 Add the following code to your MCP client configuration (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`).
 
 Add the following code to your MCP client configuration (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`). The AWS MCP server uses the default AWS profile by default. Specify a value for `AWS_PROFILE` if you want to use a different profile. Similarly, adjust the AWS Region and log level values as needed.
+Add the following code to your MCP client configuration (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`). The AWS MCP server uses the default AWS profile by default. Specify a value for `AWS_PROFILE` if you want to use a different profile. Similarly, adjust the AWS Region and log level values as needed.
 
 ```
 {
@@ -61,7 +62,7 @@ Add the following code to your MCP client configuration (e.g., for Amazon Q Deve
 }
 ```
 
-Remember to remove all comments when you finish configuration, otherwise the config file will not load properly.
+Remember to remove all comments when you finish configuration, otherwise the config file will not load properly. 
 
 Once configured, you can ask your AI assistant questions such as:
 
@@ -116,3 +117,4 @@ To make changes to this MCP locally and run it:
    ```bash
    uv run awslabs.aws-mcp-server
    ```
+

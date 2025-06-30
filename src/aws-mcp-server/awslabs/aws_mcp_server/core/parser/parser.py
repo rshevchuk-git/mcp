@@ -363,6 +363,9 @@ def _handle_awscli_customization(
     command_table = driver._get_command_table()
     service_command = command_table.get(service)
 
+    if service_command is None:
+        raise InvalidServiceOperationError(service, operation)
+
     # For custom commands, we need to check if the operation exists in the service's command table
     if hasattr(service_command, '_get_command_table'):
         service_command_table = service_command._get_command_table()

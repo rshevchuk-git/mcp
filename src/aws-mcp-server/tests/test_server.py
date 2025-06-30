@@ -1,6 +1,8 @@
 from awslabs.aws_mcp_server.core.common.errors import AwsMcpError
 from awslabs.aws_mcp_server.core.common.models import (
     AwsMcpServerErrorResponse,
+    InterpretationResponse,
+    ProgramInterpretationResponse,
 )
 from awslabs.aws_mcp_server.server import call_aws
 from botocore.exceptions import NoCredentialsError
@@ -23,12 +25,17 @@ def test_call_aws_success(
 ):
     """Test call_aws returns success for a valid read-only command."""
     mock_get_creds.return_value = TEST_CREDENTIALS
-    mock_result = MagicMock()
-    mock_result.model_dump.return_value = {
-        'success': True,
-        'data': {'Buckets': []},
-        'ResponseMetadata': {'HTTPStatusCode': 200},
-    }
+
+    # Create a proper ProgramInterpretationResponse mock
+    mock_response = InterpretationResponse(error=None, json='{"Buckets": []}', status_code=200)
+
+    mock_result = ProgramInterpretationResponse(
+        response=mock_response,
+        metadata=None,
+        validation_failures=None,
+        missing_context_failures=None,
+        failed_constraints=None,
+    )
     mock_interpret.return_value = mock_result
 
     mock_is_operation_read_only.return_value = True
@@ -52,12 +59,8 @@ def test_call_aws_success(
     # Execute
     result = call_aws('aws s3api list-buckets')
 
-    # Verify
-    assert result == {
-        'success': True,
-        'data': {'Buckets': []},
-        'ResponseMetadata': {'HTTPStatusCode': 200},
-    }
+    # Verify - the result should be the ProgramInterpretationResponse object
+    assert result == mock_result
     mock_translate_cli_to_ir.assert_called_once_with('aws s3api list-buckets')
     mock_validate.assert_called_once_with(mock_ir)
     mock_get_creds.assert_called_once()
@@ -79,12 +82,17 @@ def test_call_aws_with_mutating_action(
 ):
     """Test call_aws with mutating action."""
     mock_get_creds.return_value = TEST_CREDENTIALS
-    mock_result = MagicMock()
-    mock_result.model_dump.return_value = {
-        'success': True,
-        'data': {'Buckets': []},
-        'ResponseMetadata': {'HTTPStatusCode': 200},
-    }
+
+    # Create a proper ProgramInterpretationResponse mock
+    mock_response = InterpretationResponse(error=None, json='{"Buckets": []}', status_code=200)
+
+    mock_result = ProgramInterpretationResponse(
+        response=mock_response,
+        metadata=None,
+        validation_failures=None,
+        missing_context_failures=None,
+        failed_constraints=None,
+    )
     mock_interpret.return_value = mock_result
 
     mock_is_operation_read_only.return_value = False
@@ -109,11 +117,7 @@ def test_call_aws_with_mutating_action(
     result = call_aws('aws s3api create-bucket --bucket somebucket')
 
     # Verify that no consent was requested
-    assert result == {
-        'success': True,
-        'data': {'Buckets': []},
-        'ResponseMetadata': {'HTTPStatusCode': 200},
-    }
+    assert result == mock_result
     mock_translate_cli_to_ir.assert_called_once_with('aws s3api create-bucket --bucket somebucket')
     mock_validate.assert_called_once_with(mock_ir)
     mock_get_creds.assert_called_once()

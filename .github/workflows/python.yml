@@ -17,6 +17,8 @@ jobs:
       aws-mcp-changed: ${{ steps.aws-mcp-changed.outputs.aws-mcp-changed }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
       - name: Should rebuild AWS MCP embeddings
         id: aws-mcp-changed
         run: |
@@ -49,6 +51,8 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@445689ea25e0de0a23313031f5fe577c74ae45a1 # v6.3.0

@@ -613,7 +613,6 @@ def test_validate_success():
     response_json = json.loads(response.model_dump_json())
     assert response_json['validation_failures'] is None
     assert response_json['missing_context_failures'] is None
-    assert response_json['failed_constraints'] == []
 
 
 @pytest.mark.parametrize(

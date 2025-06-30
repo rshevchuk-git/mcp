@@ -56,7 +56,7 @@ Add the following code to your MCP client configuration (e.g., for Amazon Q Deve
 }
 ```
 
-Remember to remove all comments when you finish configuration, otherwise the config file will not load properly. 
+Remember to remove all comments when you finish configuration, otherwise the config file will not load properly.
 
 Once configured, you can ask your AI assistant questions such as:
 
@@ -102,11 +102,12 @@ To make changes to this MCP locally and run it:
    uv sync
    ```
 
-3. Configure AWS credentials:
+3. Configure AWS credentials and environment variables:
    - Ensure you have AWS credentials configured in `~/.aws/credentials` or set the appropriate environment variables.
+   - `export AWS_REGION=us-east-1` or any other region of your preference
+
 
 4. Run the server:
    ```bash
    uv run awslabs.aws-mcp-server
    ```
-

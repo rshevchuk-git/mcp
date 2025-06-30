@@ -20,30 +20,11 @@ jobs:
       - name: Should rebuild AWS MCP embeddings
         id: aws-mcp-changed
         run: |
-          echo "=== DEBUGGING CHANGE DETECTION ==="
-          echo "Event: ${{ github.event_name }}"
-          echo "Before SHA: '${{ github.event.before }}'"
-          echo "After SHA: '${{ github.sha }}'"
-          
-          echo "=== GIT LOG (last 5 commits) ==="
-          git log --oneline -5
-          
-          echo "=== ALL CHANGED FILES ==="
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }}
-          
-          echo "=== FILES MATCHING PATTERN ==="
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^src/aws-mcp-server/" || echo "No matches found"
-          
-          echo "=== GREP EXIT CODE ==="
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^src/aws-mcp-server/"
-          echo "Grep exit code: $?"
-          
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^src/aws-mcp-server/"; then
+          # Check if aws-mcp-server files changed
+          if git diff --name-only HEAD~1 HEAD | grep -q "^src/aws-mcp-server/"; then
             echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-            echo "✅ Setting aws-mcp-changed=true"
           else
             echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-            echo "❌ Setting aws-mcp-changed=false"
           fi
       - name: Find Python packages
         id: find-packages

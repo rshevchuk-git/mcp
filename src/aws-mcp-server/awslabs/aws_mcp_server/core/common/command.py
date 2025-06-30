@@ -26,6 +26,7 @@ class IRCommand:
     parameters: dict[str, Any]
     region: str | None = None
     client_side_query: str | None = None
+    is_awscli_customization: bool = False
 
     @property
     def operation_python_name(self):

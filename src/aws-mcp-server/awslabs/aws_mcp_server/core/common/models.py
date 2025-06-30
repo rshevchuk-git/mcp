@@ -21,6 +21,13 @@ from pydantic import BaseModel, Field
 from typing import Any
 
 
+class AwsMcpServerErrorResponse(BaseModel):
+    """Base class for all errors thrown by the server."""
+
+    error: bool = True
+    detail: str
+
+
 class ProgramValidationRequest(BaseModel):
     """The request structure for the validation endpoint."""
 
@@ -86,16 +93,11 @@ class ProgramValidationResponse(BaseModel):
         return (
             self.validation_failures is not None
             and len(self.validation_failures) > 0
+            or self.missing_context_failures is not None
+            and len(self.missing_context_failures) > 0
             or self.failed_constraints is not None
             and len(self.failed_constraints) > 0
         )
-
-
-class RequireConsentResponse(BaseModel):
-    """Response indicating whether explicit user consent is required."""
-
-    status: str
-    message: str
 
 
 class Credentials(BaseModel):
@@ -107,28 +109,6 @@ class Credentials(BaseModel):
     access_key_id: str
     secret_access_key: str
     session_token: str | None
-
-
-class ProgramInterpretationRequest(BaseModel):
-    """The request structure for the interpretation endpoint."""
-
-    cli_command: str
-    """An AWS CLI Command which will be validated and interpreted"""
-
-    credentials: Credentials
-    """Credentials that will be assumed to interpret the command"""
-
-    default_region: str
-    """Default region that will be used if provided cli command doesn't have region set"""
-
-    max_results: int | None = Field(default=None)
-    """Limit the number of results if the operation supports limiting"""
-
-    max_tokens: int | None = Field(default=None)
-    """Limit the number of results to the specified amount of LLM tokens if the operation supports limiting"""
-
-    is_counting: bool | None = Field(default=None)
-    """Support resource counting"""
 
 
 class InterpretationResponse(BaseModel):
@@ -150,8 +130,15 @@ class InterpretationResponse(BaseModel):
     """Raw version of the response from interpreting the command"""
 
 
+class AwsCliAliasResponse(BaseModel):
+    """Response of executing custom AWS CLI alias command."""
+
+    response: str | None = Field(None)
+    error: str | None = Field(None)
+
+
 class ProgramInterpretationResponse(BaseModel):
-    """Payload for the interpretation endpoint."""
+    """Response of the program interpretation."""
 
     response: InterpretationResponse | None = Field(None)
     metadata: InterpretationMetadata | None = Field(default=None)
@@ -237,6 +224,8 @@ class IRTranslation:
     missing_context_failures: list[Failure] | None = None
 
     unsupported_translation: Failure | None = None
+
+    is_awscli_customization: bool = False
 
     @property
     def validation_or_translation_failures(self) -> list[Failure] | None:

@@ -16,14 +16,13 @@ import os
 import sys
 from .core.aws.driver import translate_cli_to_ir
 from .core.aws.service import (
-    check_for_consent,
+    execute_awscli_customization,
     get_local_credentials,
     interpret_command,
     is_operation_read_only,
     validate,
 )
 from .core.common.config import (
-    BYPASS_TOOL_CONSENT,
     DEFAULT_REGION,
     FASTMCP_LOG_LEVEL,
     MAX_OUTPUT_TOKENS,
@@ -33,8 +32,9 @@ from .core.common.config import (
 )
 from .core.common.errors import AwsMcpError
 from .core.common.models import (
-    ProgramInterpretationRequest,
-    ProgramValidationRequest,
+    AwsCliAliasResponse,
+    AwsMcpServerErrorResponse,
+    ProgramInterpretationResponse,
 )
 from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
@@ -171,85 +171,62 @@ def call_aws(
             description='Optional flag to enable resource counting operations. MUST use this for answering any questions related to counting (e.g. "How many xxx", "Count my xxx", "Number of xxx", etc.)'
         ),
     ] = None,
-    consent_token: Annotated[
-        str | None,
-        Field(
-            description='if cli_command requires consent and the user has given explicit consent for a command, token from the previous tool use call'
-        ),
-    ] = None,
-) -> dict[str, Any]:
+) -> ProgramInterpretationResponse | AwsMcpServerErrorResponse | AwsCliAliasResponse:
     """Call AWS with the given CLI command and return the result as a dictionary."""
     try:
-        request = ProgramValidationRequest(cli_command=cli_command)
         ir = translate_cli_to_ir(cli_command)
         ir_validation = validate(ir)
 
         if ir_validation.validation_failed:
-            return {
-                'error': True,
-                'detail': f'Error while validating the command: {ir_validation.model_dump_json()}',
-            }
+            return AwsMcpServerErrorResponse(
+                detail=f'Error while validating the command: {ir_validation.model_dump_json()}',
+            )
 
         if READ_OPERATIONS_ONLY_MODE and not is_operation_read_only(ir, READ_OPERATIONS_INDEX):
-            return {
-                'error': True,
-                'detail': (
+            return AwsMcpServerErrorResponse(
+                detail=(
                     'Execution of this operation is not allowed because read only mode is enabled. '
                     f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'
                 ),
-            }
-
-        if not BYPASS_TOOL_CONSENT:
-            require_consent_response = check_for_consent(
-                cli_command=cli_command, ir=ir, consent_token=consent_token
             )
-            if require_consent_response is not None:
-                return require_consent_response.model_dump()
 
     except AwsMcpError as e:
-        return {
-            'error': True,
-            'detail': f'Error while validating the command: {e.as_failure().reason}',
-        }
+        return AwsMcpServerErrorResponse(
+            detail=f'Error while validating the command: {e.as_failure().reason}',
+        )
     except Exception as e:
-        return {'error': True, 'detail': f'Error while validating the command: {str(e)}'}
+        return AwsMcpServerErrorResponse(
+            detail=f'Error while validating the command: {str(e)}',
+        )
 
     try:
         creds = get_local_credentials()
 
-        request = ProgramInterpretationRequest(
+        if ir.command.is_awscli_customization:
+            return execute_awscli_customization(cli_command)
+
+        return interpret_command(
             cli_command=cli_command,
             credentials=creds,
             default_region=cast(str, DEFAULT_REGION),
             max_results=max_results,
             max_tokens=int(MAX_OUTPUT_TOKENS) if MAX_OUTPUT_TOKENS else None,
             is_counting=is_counting,
-        )
-
-        result = interpret_command(
-            request.cli_command,
-            request.credentials,
-            request.default_region,
-            request.max_results,
-            request.max_tokens,
-            request.is_counting,
-        )
-
-        return result.model_dump()
+        ).model_dump()
     except NoCredentialsError:
-        return {
-            'error': True,
-            'detail': 'Error while executing the command: No AWS credentials found. '
+        return AwsMcpServerErrorResponse(
+            detail='Error while executing the command: No AWS credentials found. '
             "Please configure your AWS credentials using 'aws configure' "
             'or set appropriate environment variables.',
-        }
+        )
     except AwsMcpError as e:
-        return {
-            'error': True,
-            'detail': f'Error while executing the command: {e.as_failure().reason}',
-        }
+        return AwsMcpServerErrorResponse(
+            detail=f'Error while executing the command: {e.as_failure().reason}',
+        )
     except Exception as e:
-        return {'error': True, 'detail': f'Error while executing the command: {str(e)}'}
+        return AwsMcpServerErrorResponse(
+            detail=f'Error while executing the command: {str(e)}',
+        )
 
 
 def main():

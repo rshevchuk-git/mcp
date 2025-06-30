@@ -95,7 +95,7 @@ class DenseRetriever:
         if not self.cache_file or not Path(self.cache_file).exists():
             raise FileNotFoundError(f'Cache file not found: {self.cache_file}')
         logger.info(f'Loading data from cache: {self.cache_file}')
-        data = np.load(self.cache_file, allow_pickle=True)
+        data = np.load(self.cache_file, allow_pickle=False)
         self._documents = json.loads(str(data['documents']))
         self._embeddings = data['embeddings']
 

@@ -25,7 +25,6 @@ from loguru import logger
 from .models import (
     Context,
     Credentials,
-    ProgramInterpretationRequest,
     ProgramValidationRequest,
 )
 
@@ -39,6 +38,5 @@ __all__ = [
     'logger',
     'Context',
     'Credentials',
-    'ProgramInterpretationRequest',
     'ProgramValidationRequest',
 ]

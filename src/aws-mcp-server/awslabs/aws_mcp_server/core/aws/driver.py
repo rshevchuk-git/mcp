@@ -17,7 +17,6 @@ from ..common.constraints import Constraint, verify_constraints_on_ir
 from ..common.errors import (
     CliParsingError,
     CommandValidationError,
-    InvalidCustomCommandError,
     MissingContextError,
 )
 from ..common.helpers import as_json
@@ -45,10 +44,6 @@ def translate_cli_to_ir(cli_command: str) -> IRTranslation:
     """
     try:
         command = parse(cli_command)
-    except InvalidCustomCommandError as err:
-        return IRTranslation(
-            unsupported_translation=err.as_failure(),
-        )
     except (CliParsingError, CommandValidationError) as exc:
         return IRTranslation(validation_failures=[exc.as_failure()])
     except MissingContextError as exc:

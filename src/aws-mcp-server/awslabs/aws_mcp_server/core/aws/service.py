@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import boto3
+import contextlib
+from ..aws.services import driver
 from ..common.constraints import (
     AllowEverything,
     Constraint,
@@ -20,8 +22,9 @@ from ..common.constraints import (
     verify_constraints_on_ir,
 )
 from ..common.errors import Failure
-from ..common.models import Context as ContextAPIModel
 from ..common.models import (
+    AwsCliAliasResponse,
+    AwsMcpServerErrorResponse,
     Credentials,
     InterpretationMetadata,
     InterpretationResponse,
@@ -30,22 +33,17 @@ from ..common.models import (
     ProgramClassificationMetadata,
     ProgramInterpretationResponse,
     ProgramValidationResponse,
-    RequireConsentResponse,
 )
+from ..common.models import Context as ContextAPIModel
 from ..common.models import ValidationFailure as FailureAPIModel
-from ..metadata.confirm_list import get_confirm_list
 from ..metadata.read_only_operations_list import (
     ReadOnlyOperations,
 )
+from ..parser.lexer import split_cli_command
 from .driver import interpret_command as _interpret_command
-from .token_manager import TokenManager
 from botocore.exceptions import NoCredentialsError
-from loguru import logger
+from io import StringIO
 from typing import Any, cast
-
-
-confirm_list = get_confirm_list()
-token_manager = TokenManager()
 
 
 def get_local_credentials() -> Credentials:
@@ -101,51 +99,31 @@ def validate(ir: IRTranslation) -> ProgramValidationResponse:
     )
 
 
-def check_for_consent(
+def execute_awscli_customization(
     cli_command: str,
-    ir: IRTranslation,
-    consent_token: str | None,
-) -> RequireConsentResponse | None:
-    """Check if the given command requires explicit user consent and handle consent logic."""
-    if not ir.command_metadata:
-        raise RuntimeError('IR is missing command_metadata')
-    service_name = ir.command_metadata.service_sdk_name
-    operation_name = ir.command_metadata.operation_sdk_name
+) -> AwsCliAliasResponse | AwsMcpServerErrorResponse:
+    """Execute the given AWS CLI command."""
+    args = split_cli_command(cli_command)[1:]
 
-    if confirm_list.has(service=service_name, operation=operation_name):
-        logger.info('Checking consent token')
+    try:
+        stdout_capture = StringIO()
+        stderr_capture = StringIO()
 
-        # Check if a valid token was provided
-        if consent_token is not None and token_manager.validate_token(consent_token, cli_command):
-            # Valid token provided, proceed with operation
-            logger.info('Valid consent token provided. Proceeding with operation.')
-        # Check if there's a valid token for this command type, even if not provided
-        elif consent_token is None and token_manager.has_valid_token_for_command(cli_command):
-            # Found a valid previous token for this API
-            logger.info(
-                'Found previous valid token for command signature. Proceeding with operation.'
-            )
-        # No valid token provided or found for this command type
-        else:
-            if consent_token is not None:
-                # Token was provided but is invalid, expired, or doesn't match
-                logger.info(
-                    'Invalid, expired token, or command signature mismatch. Generating new token.'
-                )
-                message_prefix = (
-                    "Consent token expired, invalid, or doesn't match the command signature."
-                )
-            else:
-                # No token was provided
-                logger.info('User consent not found. Asking for consent.')
-                message_prefix = ''
+        with (
+            contextlib.redirect_stdout(stdout_capture),
+            contextlib.redirect_stderr(stderr_capture),
+        ):
+            driver.main(args)
 
-            # Generate a new token for this command
-            new_token = token_manager.generate_token(cli_command)
-            return RequireConsentResponse(
-                status='consent_required',
-                message=f"{message_prefix} This operation '{cli_command}' requires explicit consent. Ask user for consent, and then call again with consent token {new_token} if user gives consent to run action",
-            )
+        stdout_output = stdout_capture.getvalue()
+        stderr_output = stderr_capture.getvalue()
+
+        return AwsCliAliasResponse(response=stdout_output, error=stderr_output)
+    except Exception as e:
+        return AwsMcpServerErrorResponse(
+            error=True,
+            detail=f"Error while executing '{cli_command}': {e}",
+        )
 
 
 def interpret_command(

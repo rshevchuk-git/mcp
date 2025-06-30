@@ -23,6 +23,7 @@ from ..aws.services import (
     update_parameters_with_max_results,
 )
 from ..common.command import IRCommand
+from ..common.config import OPT_IN_TELEMETRY, READ_OPERATIONS_ONLY_MODE
 from ..common.helpers import operation_timer
 from botocore.config import Config
 from loguru import logger
@@ -69,7 +70,7 @@ def interpret(
             connect_timeout=TIMEOUT_AFTER_SECONDS,
             read_timeout=TIMEOUT_AFTER_SECONDS,
             retries={'max_attempts': 1},
-            user_agent_extra=f'AWSMCP/{PACKAGE_VERSION}',
+            user_agent_extra=_get_user_agent_extra(),
         )
 
         client = boto3.client(
@@ -129,3 +130,12 @@ def interpret(
         )
 
         return response
+
+
+def _get_user_agent_extra() -> str:
+    user_agent_extra = f'AWSMCP/{PACKAGE_VERSION}'
+    if not OPT_IN_TELEMETRY:
+        return user_agent_extra
+    # ReadOperationsOnly mode
+    user_agent_extra += f' cfg/ro#{"1" if READ_OPERATIONS_ONLY_MODE else "0"}'
+    return user_agent_extra

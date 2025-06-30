@@ -137,6 +137,14 @@ T2_EC2_DESCRIBE_INSTANCES = {
     'ResponseMetadata': {'HTTPStatusCode': 200},
 }
 
+T2_EC2_DESCRIBE_INSTANCES_FILTERED = {
+    'Result': [
+        EMPTY_EC2_RESERVATION.get('Instances'),
+        T2_EC2_INSTANCE_RESERVATION.get('Instances'),
+    ],
+    'ResponseMetadata': {'HTTPStatusCode': 200},
+}
+
 EC2_DESCRIBE_INSTANCES = {
     'Reservations': [
         T3_EC2_INSTANCE_RESERVATION,

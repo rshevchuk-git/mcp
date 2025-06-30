@@ -32,7 +32,7 @@ from tests.fixtures import (
     GET_CALLER_IDENTITY_PAYLOAD,
     REDSHIFT_FIRST_PAGE,
     SSM_LIST_NODES_PAYLOAD,
-    T2_EC2_DESCRIBE_INSTANCES,
+    T2_EC2_DESCRIBE_INSTANCES_FILTERED,
     TEST_CREDENTIALS,
     patch_boto3,
     patch_boto3_paginated_cloudformation,
@@ -131,7 +131,7 @@ def test_interpret_returns_missing_context_failures():
         ),
         (
             """aws ec2 describe-instances --query "Reservations[].Instances[?InstanceType=='t2.micro']" """,
-            T2_EC2_DESCRIBE_INSTANCES,
+            T2_EC2_DESCRIBE_INSTANCES_FILTERED,
             (
                 'DescribeInstances',
                 {},

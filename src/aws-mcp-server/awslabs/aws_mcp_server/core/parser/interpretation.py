@@ -15,7 +15,6 @@
 import boto3
 import importlib.metadata
 import time
-from ..aws.client_side_filtering import handle_client_side_query
 from ..aws.pagination import build_result
 from ..aws.resource_counting import count_resources_via_pagination
 from ..aws.services import (
@@ -26,6 +25,7 @@ from ..common.command import IRCommand
 from ..common.config import OPT_IN_TELEMETRY, READ_OPERATIONS_ONLY_MODE
 from ..common.helpers import operation_timer
 from botocore.config import Config
+from jmespath.parser import ParsedResult
 from loguru import logger
 from typing import Any
 
@@ -45,7 +45,7 @@ def interpret(
     secret_access_key: str,
     session_token: str | None,
     region: str,
-    client_side_query: str | None = None,
+    client_side_filter: ParsedResult | None = None,
     max_results: int | None = None,
     max_tokens: int | None = None,
     is_counting: bool | None = None,
@@ -90,6 +90,7 @@ def interpret(
                 operation_parameters=ir.parameters,
                 pagination_config=pagination_config,
                 max_tokens=max_tokens,
+                client_side_filter=client_side_filter,
             )
 
             if is_counting:
@@ -125,9 +126,8 @@ def interpret(
             )
             response = operation(**parameters)
 
-        response = handle_client_side_query(
-            response, client_side_query, ir.service_name, ir.operation_name
-        )
+            if client_side_filter is not None:
+                response = _apply_filter(response, client_side_filter)
 
         return response
 
@@ -139,3 +139,9 @@ def _get_user_agent_extra() -> str:
     # ReadOperationsOnly mode
     user_agent_extra += f' cfg/ro#{"1" if READ_OPERATIONS_ONLY_MODE else "0"}'
     return user_agent_extra
+
+
+def _apply_filter(response: dict[str, Any], client_side_filter: ParsedResult) -> dict[str, Any]:
+    response_metadata = response.get('ResponseMetadata')
+    filtered_result = client_side_filter.search(response)
+    return {'Result': filtered_result, 'ResponseMetadata': response_metadata}

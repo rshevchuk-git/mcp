@@ -73,6 +73,31 @@ def test_build_result():
     assert result.get('NextToken') is None
 
 
+def test_build_result_with_client_side_filter():
+    """Test build_result with MaxTokens on the first page and a client-side filter."""
+    mock_paginator = Mock()
+    mock_page_iter = MagicMock()
+
+    mock_page_iter.__iter__.return_value = get_pages()
+    mock_page_iter.result_keys = [jmespath.compile('Functions')]
+    mock_page_iter.resume_token = None
+    mock_paginator._pagination_cfg = {'output_token': 'NextToken'}
+    mock_paginator.paginate.return_value = mock_page_iter
+
+    result = build_result(
+        paginator=mock_paginator,
+        service_name='lambda',
+        operation_name='ListFunctions',
+        operation_parameters={},
+        pagination_config={},
+        client_side_filter=jmespath.compile('Functions[].FunctionName'),
+    )
+
+    assert result['Result'] == ['my-function-1', 'my-function-2']
+    assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
+    assert result.get('pagination_token') is None
+
+
 def test_build_result_with_max_results():
     """Test build_result with MaxItems in pagination config."""
     mock_paginator = Mock()
@@ -154,5 +179,31 @@ def test_build_result_max_tokens_second_page():
 
     assert len(functions) == 1
     assert functions[0].get('FunctionName') == 'my-function-1'
+    assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
+    assert result.get('pagination_token') is not None
+
+
+def test_build_result_max_tokens_first_page_with_client_side_filter():
+    """Test build_result with MaxTokens on the first page and a client-side filter."""
+    mock_paginator = Mock()
+    mock_page_iter = MagicMock()
+
+    mock_page_iter.__iter__.return_value = get_pages()
+    mock_page_iter.result_keys = [jmespath.compile('Functions')]
+    mock_page_iter.resume_token = None
+    mock_paginator._pagination_cfg = {'output_token': 'NextToken'}
+    mock_paginator.paginate.return_value = mock_page_iter
+
+    result = build_result(
+        paginator=mock_paginator,
+        service_name='lambda',
+        operation_name='ListFunctions',
+        operation_parameters={},
+        pagination_config={},
+        client_side_filter=jmespath.compile('Functions[].FunctionName'),
+        max_tokens=1,
+    )
+
+    assert result['Result'] == ['my-function-1']
     assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
     assert result.get('pagination_token') is not None

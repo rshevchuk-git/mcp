@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import botocore.exceptions
+import jmespath
 from ..common.constraints import Constraint, verify_constraints_on_ir
 from ..common.errors import (
     CliParsingError,
@@ -25,6 +26,8 @@ from ..parser.classifier import classify_operation
 from ..parser.interpretation import interpret
 from ..parser.parser import parse
 from .regions import GLOBAL_SERVICE_REGIONS
+from jmespath.exceptions import ParseError
+from loguru import logger
 
 
 def translate_cli_to_ir(cli_command: str) -> IRTranslation:
@@ -99,6 +102,14 @@ def interpret_command(
         region = GLOBAL_SERVICE_REGIONS[translation.command.command_metadata.service_sdk_name]
 
     client_side_query = translation.command.client_side_query
+    client_side_filter = None
+
+    if client_side_query is not None:
+        try:
+            client_side_filter = jmespath.compile(client_side_query)
+        except ParseError as error:
+            logger.info('Ignoring client-side filter: {}', client_side_query)
+            logger.error('Client-side filter parsing error: {}', str(error))
 
     failed_constraints = verify_constraints_on_ir(translation, constraints)
     if failed_constraints:
@@ -113,7 +124,7 @@ def interpret_command(
             secret_access_key=secret_access_key,
             session_token=session_token,
             region=region,
-            client_side_query=client_side_query,
+            client_side_filter=client_side_filter,
             max_results=max_results,
             max_tokens=max_tokens,
             is_counting=is_counting,

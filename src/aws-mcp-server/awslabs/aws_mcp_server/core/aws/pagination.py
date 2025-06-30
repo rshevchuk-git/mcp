@@ -17,6 +17,7 @@ import time
 from .services import PaginationConfig
 from botocore.paginate import PageIterator, Paginator
 from botocore.utils import merge_dicts, set_value_from_jmespath
+from jmespath.parser import ParsedResult
 from loguru import logger
 from typing import Any
 
@@ -40,11 +41,17 @@ def _process_token_limits(
     remaining_tokens: int | None,
     page: dict[str, Any],
     is_first_page: bool,
+    client_side_filter: ParsedResult | None,
 ) -> tuple[int | None, bool]:
     if remaining_tokens is None:
         return remaining_tokens, False
 
-    remaining_tokens -= estimate_llm_tokens(json.dumps(page, default=str))
+    if client_side_filter is not None:
+        remaining_tokens -= estimate_llm_tokens(
+            json.dumps(client_side_filter.search(page), default=str)
+        )
+    else:
+        remaining_tokens -= estimate_llm_tokens(json.dumps(page, default=str))
 
     should_stop = not is_first_page and remaining_tokens < 0
     if should_stop:
@@ -108,9 +115,17 @@ def _finalize_result(
     result: dict[str, Any],
     page_iterator: PageIterator,
     pages_processed: int,
+    response_metadata: dict[str, Any] | None,
+    client_side_filter: ParsedResult | None,
 ) -> dict[str, Any]:
     """Finalize the result by adding non-aggregate parts and processing metadata."""
+    if client_side_filter is not None:
+        # Apply client-side filter
+        result = {'Result': client_side_filter.search(result)}
+
     merge_dicts(result, page_iterator.non_aggregate_part)
+
+    result['ResponseMetadata'] = response_metadata
 
     if page_iterator.resume_token is not None:
         result['pagination_token'] = page_iterator.resume_token
@@ -126,6 +141,7 @@ def build_result(
     operation_parameters: dict[str, Any],
     pagination_config: PaginationConfig,
     max_tokens: int | None = None,
+    client_side_filter: ParsedResult | None = None,
 ):
     """This function is based on build_full_result in botocore with some modifications.
 
@@ -134,6 +150,7 @@ def build_result(
     https://github.com/boto/botocore/blob/master/botocore/paginate.py#L481
     """
     result: dict[str, Any] = {}
+    response_metadata = None
     remaining_tokens = max_tokens
     pages_processed = 0
     start_time = time.time()
@@ -152,7 +169,7 @@ def build_result(
             page = response[1]
 
         remaining_tokens, should_stop_for_tokens = _process_token_limits(
-            remaining_tokens, page, is_first_page
+            remaining_tokens, page, is_first_page, client_side_filter
         )
         if should_stop_for_tokens:
             break
@@ -161,7 +178,7 @@ def build_result(
         _merge_page_into_result(result, page, page_iterator)
         pages_processed += 1
 
-        result['ResponseMetadata'] = page.get('ResponseMetadata')
+        response_metadata = page.get('ResponseMetadata')
 
         elapsed_time = time.time() - start_time
         if _should_stop_early(elapsed_time, remaining_tokens, is_first_page):
@@ -170,5 +187,6 @@ def build_result(
                 page_iterator.resume_token = page_iterator._get_next_token(page)
             break
 
-    _finalize_result(result, page_iterator, pages_processed)
-    return result
+    return _finalize_result(
+        result, page_iterator, pages_processed, response_metadata, client_side_filter
+    )

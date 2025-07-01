@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      since:
+        default: ''
+        description: 'changes since'
+        required: false
+        type: string
 
 permissions: {}
 
@@ -25,11 +31,14 @@ jobs:
         run: |
           # Push         against last commit
           # Pull Request against target branch sha
-          # Workflow     against last release (or first commit if there are no releases)
+          # Workflow     against input
+          # Otherwise    against latest release
           if [ "${{ github.event_name }}" == "push" ]; then
             SINCE="${{ github.event.before }}";
           elif [ "${{ github.event_name }}" == "pull_request" ]; then
             SINCE="${{ github.base_ref }}";
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            SINCE="${{ inputs.since }}"
           else
             SINCE="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName | jq -r '.[].tagName')"
           fi;

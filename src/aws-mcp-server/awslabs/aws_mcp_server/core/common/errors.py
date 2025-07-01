@@ -112,7 +112,7 @@ class InvalidServiceError(CliParsingError):
     def as_failure(self) -> Failure:
         """Return a Failure object representing this error."""
         return Failure(reason=str(self), context={'service': self._service})
-    
+
 
 class MissingOperationError(CliParsingError):
     """Thrown when the supplied command does not include an operation."""

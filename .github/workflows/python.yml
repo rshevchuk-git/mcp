@@ -46,6 +46,7 @@ jobs:
           echo "$SINCE"
           CHANGEDFILES="$(git diff --name-only "$SINCE" HEAD | sed 's/^\.\///' | jq -R -s -c 'split("\n")[:-1]')"
           CHANGEDDIRECTORIES="$(echo $CHANGEDFILES | jq -r '.[] | select(. | startswith("src\/"))' | cut -d'/' -f2 | sort -u | sed 's/^\.\///' | jq -R -s -c 'split("\n")[:-1]')"
+          echo "$CHANGEDDIRECTORIES"
           echo "changed-directories=$CHANGEDDIRECTORIES" >> $GITHUB_OUTPUT
 
       - name: Should rebuild AWS MCP embeddings
@@ -188,16 +189,17 @@ jobs:
       #   run: uv run --frozen ruff check .
 
       - name: Debug
+        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != ''
         working-directory: src/${{ matrix.package }}
         run: |
-          echo "${{ needs.look-for-changes.outputs.changed-directories }}""
+          echo "${{ needs.detect-packages.outputs.changed-directories }}""
           echo "::group::NEEDS object"
           echo "${{ toJson(needs) }}"
           echo "::endgroup::"
 
 
       - name: Run generate-embeddings script if it is aws-mcp-server
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.look-for-changes.outputs.changed-directories, 'aws-mcp-server')
+        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packagess.outputs.changed-directories, 'aws-mcp-server')
         working-directory: src/${{ matrix.package }}
         run: |
           echo "yes"

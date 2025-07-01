@@ -85,7 +85,6 @@ class ProgramValidationResponse(BaseModel):
     validation_failures: list[ValidationFailure] | None
     missing_context_failures: list[ValidationFailure] | None
     classification: ProgramClassificationMetadata | None
-    failed_constraints: list[str] | None = Field(None)
 
     @property
     def validation_failed(self) -> bool:
@@ -95,8 +94,6 @@ class ProgramValidationResponse(BaseModel):
             and len(self.validation_failures) > 0
             or self.missing_context_failures is not None
             and len(self.missing_context_failures) > 0
-            or self.failed_constraints is not None
-            and len(self.failed_constraints) > 0
         )
 
 

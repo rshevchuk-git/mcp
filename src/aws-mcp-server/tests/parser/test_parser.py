@@ -2,6 +2,7 @@ import pytest
 import re
 from awslabs.aws_mcp_server.core.common.command_metadata import CommandMetadata
 from awslabs.aws_mcp_server.core.common.errors import (
+    ClientSideFilterError,
     CommandValidationError,
     ExpectedArgumentError,
     InvalidChoiceForParameterError,
@@ -584,5 +585,14 @@ def test_ssm_cli_raises_parameter_schema_validation_error_when_platform_version_
                 )
             )
         ),
+    ):
+        parse(command)
+
+
+def test_client_side_filter_error():
+    """Test that a malformed client-side filter raises an error."""
+    command = 'aws ec2 describe-instances --query "Reservations[[]"'
+    with pytest.raises(
+        ClientSideFilterError, match="Error parsing client-side filter 'Reservations[[]'*"
     ):
         parse(command)

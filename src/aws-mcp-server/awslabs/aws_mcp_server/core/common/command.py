@@ -15,6 +15,7 @@
 import dataclasses
 from .command_metadata import CommandMetadata
 from botocore import xform_name
+from jmespath.parser import ParsedResult
 from typing import Any
 
 
@@ -25,7 +26,7 @@ class IRCommand:
     command_metadata: CommandMetadata
     parameters: dict[str, Any]
     region: str | None = None
-    client_side_query: str | None = None
+    client_side_filter: ParsedResult | None = None
     is_awscli_customization: bool = False
 
     @property

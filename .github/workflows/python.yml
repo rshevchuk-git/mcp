@@ -204,8 +204,7 @@ jobs:
         if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
         working-directory: src/${{ matrix.package }}
         run: |
-          echo "yes"
-          # uv run --frozen generate-embeddings
+          uv run --frozen generate-embeddings
 
       - name: Build package
         working-directory: src/${{ matrix.package }}

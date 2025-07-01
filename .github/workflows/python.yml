@@ -199,7 +199,7 @@ jobs:
 
 
       - name: Run generate-embeddings script if it is aws-mcp-server
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packagess.outputs.changed-directories, 'aws-mcp-server')
+        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(toJson(needs.detect-packagess.outputs.changed-directories), 'aws-mcp-server')
         working-directory: src/${{ matrix.package }}
         run: |
           echo "yes"

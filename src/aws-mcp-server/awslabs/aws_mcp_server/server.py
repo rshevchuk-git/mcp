@@ -116,16 +116,18 @@ async def suggest_aws_commands(
         ),
     ],
     ctx: Context,
-) -> dict[str, Any]:
+) -> dict[str, Any] | AwsMcpServerErrorResponse:
     """Suggest AWS CLI commands based on the provided query."""
     if not query.strip():
-        return {'detail': 'Empty query provided.'}
+        error_message = 'Empty query provided'
+        await ctx.error(error_message)
+        return AwsMcpServerErrorResponse(detail=error_message)
     try:
         return knowledge_base.get_suggestions(query)
     except Exception as e:
         error_message = f'Error while suggesting commands: {str(e)}'
         await ctx.error(error_message)
-        return {'error': True, 'detail': error_message}
+        return AwsMcpServerErrorResponse(detail=error_message)
 
 
 @server.tool(

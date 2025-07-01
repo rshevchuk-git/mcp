@@ -62,7 +62,6 @@ Once configured, you can ask your AI assistant questions such as:
 - "List all my EC2 instances"
 - "Show me S3 buckets in us-west-2"
 - "Create a new security group for web servers" (Admin policy only)
-- "What's my current AWS bill this month?"
 
 ## Security Considerations
 We primarily use credentials to control which commands this MCP server can execute. We recommend using IAM roles, in particular:

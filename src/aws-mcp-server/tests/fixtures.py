@@ -548,3 +548,16 @@ def patch_boto3_paginated_cloudformation_for_max_limit():
             mock_get_paginator.return_value = mock_paginator
 
             yield
+
+
+class DummyCtx:
+    """Mock implementation of MCP context for testing purposes."""
+
+    async def error(self, message):
+        """Mock MCP ctx.error with the given message.
+
+        Args:
+            message: The error message
+        """
+        # Do nothing because MCP ctx.error doesn't throw exception
+        pass

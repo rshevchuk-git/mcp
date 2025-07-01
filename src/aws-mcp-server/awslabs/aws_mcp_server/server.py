@@ -40,7 +40,7 @@ from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
 from botocore.exceptions import NoCredentialsError
 from loguru import logger
-from mcp.server import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
 from typing import Annotated, Any, cast
 
@@ -108,21 +108,26 @@ READ_OPERATIONS_INDEX: ReadOnlyOperations = ReadOnlyOperations()
         - Description of what the command does
     """,
 )
-def suggest_aws_commands(
+async def suggest_aws_commands(
     query: Annotated[
         str,
         Field(
             description="A natural language description of what you want to do in AWS. Should be detailed enough to capture the user's intent and any relevant context."
         ),
     ],
-) -> dict[str, Any]:
+    ctx: Context,
+) -> dict[str, Any] | AwsMcpServerErrorResponse:
     """Suggest AWS CLI commands based on the provided query."""
     if not query.strip():
-        return {'detail': 'Empty query provided.'}
+        error_message = 'Empty query provided'
+        await ctx.error(error_message)
+        return AwsMcpServerErrorResponse(detail=error_message)
     try:
         return knowledge_base.get_suggestions(query)
     except Exception as e:
-        return {'error': True, 'detail': f'Error while suggesting commands: {str(e)}'}
+        error_message = f'Error while suggesting commands: {str(e)}'
+        await ctx.error(error_message)
+        return AwsMcpServerErrorResponse(detail=error_message)
 
 
 @server.tool(
@@ -157,10 +162,11 @@ def suggest_aws_commands(
         CLI execution results with API response data or error message
     """,
 )
-def call_aws(
+async def call_aws(
     cli_command: Annotated[
         str, Field(description='The complete AWS CLI command to execute. MUST start with "aws"')
     ],
+    ctx: Context,
     max_results: Annotated[
         int | None,
         Field(description='Optional limit for number of results (useful for pagination)'),
@@ -178,32 +184,47 @@ def call_aws(
         ir_validation = validate(ir)
 
         if ir_validation.validation_failed:
+            error_message = (
+                f'Error while validating the command: {ir_validation.model_dump_json()}'
+            )
+            await ctx.error(error_message)
             return AwsMcpServerErrorResponse(
-                detail=f'Error while validating the command: {ir_validation.model_dump_json()}',
+                detail=error_message,
             )
 
         if READ_OPERATIONS_ONLY_MODE and not is_operation_read_only(ir, READ_OPERATIONS_INDEX):
+            error_message = (
+                'Execution of this operation is not allowed because read only mode is enabled. '
+                f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'
+            )
+            await ctx.error(error_message)
             return AwsMcpServerErrorResponse(
-                detail=(
-                    'Execution of this operation is not allowed because read only mode is enabled. '
-                    f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'
-                ),
+                detail=error_message,
             )
 
     except AwsMcpError as e:
+        error_message = f'Error while validating the command: {e.as_failure().reason}'
+        await ctx.error(error_message)
         return AwsMcpServerErrorResponse(
-            detail=f'Error while validating the command: {e.as_failure().reason}',
+            detail=error_message,
         )
     except Exception as e:
+        error_message = f'Error while validating the command: {str(e)}'
+        await ctx.error(error_message)
         return AwsMcpServerErrorResponse(
-            detail=f'Error while validating the command: {str(e)}',
+            detail=error_message,
         )
 
     try:
         creds = get_local_credentials()
 
         if ir.command and ir.command.is_awscli_customization:
-            return execute_awscli_customization(cli_command)
+            response: AwsCliAliasResponse | AwsMcpServerErrorResponse = (
+                execute_awscli_customization(cli_command)
+            )
+            if isinstance(response, AwsMcpServerErrorResponse):
+                await ctx.error(response.detail)
+            return response
 
         return interpret_command(
             cli_command=cli_command,
@@ -214,18 +235,26 @@ def call_aws(
             is_counting=is_counting,
         )
     except NoCredentialsError:
-        return AwsMcpServerErrorResponse(
-            detail='Error while executing the command: No AWS credentials found. '
+        error_message = (
+            'Error while executing the command: No AWS credentials found. '
             "Please configure your AWS credentials using 'aws configure' "
-            'or set appropriate environment variables.',
+            'or set appropriate environment variables.'
+        )
+        await ctx.error(error_message)
+        return AwsMcpServerErrorResponse(
+            detail=error_message,
         )
     except AwsMcpError as e:
+        error_message = f'Error while executing the command: {e.as_failure().reason}'
+        await ctx.error(error_message)
         return AwsMcpServerErrorResponse(
-            detail=f'Error while executing the command: {e.as_failure().reason}',
+            detail=error_message,
         )
     except Exception as e:
+        error_message = f'Error while executing the command: {str(e)}'
+        await ctx.error(error_message)
         return AwsMcpServerErrorResponse(
-            detail=f'Error while executing the command: {str(e)}',
+            detail=error_message,
         )
 
 

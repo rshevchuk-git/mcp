@@ -15,10 +15,30 @@ jobs:
     outputs:
       packages: ${{ steps.find-packages.outputs.packages }}
       aws-mcp-changed: ${{ steps.aws-mcp-changed.outputs.aws-mcp-changed }}
+      changed-directories: ${{ steps.find-changed-directories.outputs.changed-directories }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+      - name: find changed directories
+        id: find-changed-directories
+        run: |
+          # Push         against last commit
+          # Pull Request against target branch sha
+          # Workflow     against last release (or first commit if there are no releases)
+          if [ "${{ github.event_name }}" == "push" ]; then
+            SINCE="${{ github.event.before }}";
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            SINCE="${{ github.base_ref }}";
+          else
+            SINCE="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName | jq -r '.[].tagName')"
+          fi;
+          if [ -z "$SINCE" ]; then SINCE="$(git rev-list --max-parents=0 HEAD)"; fi;
+          echo "$SINCE"
+          CHANGEDFILES="$(git diff --name-only "$SINCE" HEAD | sed 's/^\.\///' | jq -R -s -c 'split("\n")[:-1]')"
+          CHANGEDDIRECTORIES="$(echo $CHANGEDFILES | jq -r '.[] | select(. | startswith("src\/"))' | cut -d'/' -f2 | sort -u | sed 's/^\.\///' | jq -R -s -c 'split("\n")[:-1]')"
+          echo "changed-directories=$CHANGEDDIRECTORIES" >> $GITHUB_OUTPUT
+
       - name: Should rebuild AWS MCP embeddings
         id: aws-mcp-changed
         run: |
@@ -64,7 +84,7 @@ jobs:
           echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
 
   build:
-    needs: [detect-packages]
+    needs: [detect-packages, look-for-changes]
     if: ${{ needs.detect-packages.outputs.packages != '[]' && needs.detect-packages.outputs.packages != '' }}
     strategy:
       fail-fast: false
@@ -79,8 +99,6 @@ jobs:
       actions: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@445689ea25e0de0a23313031f5fe577c74ae45a1 # v6.3.0
@@ -161,11 +179,10 @@ jobs:
         run: uv run --frozen ruff check .
 
       - name: Run generate-embeddings script if it is aws-mcp-server
+        if: needs.look-for-changes.outputs.changed-directories != [] && needs.look-for-changes.outputs.changed-directories != '' && contains(needs.look-for-changes.outputs.changed-directories, 'aws-mcp-server')
         working-directory: src/${{ matrix.package }}
         run: |
-          if [ "${{ matrix.package }}" == "aws-mcp-server" ] && [ "${{ needs.detect-packages.outputs.aws-mcp-changed }}" == "true" ]; then
-            uv run --frozen generate-embeddings
-          fi
+          uv run --frozen generate-embeddings
 
       - name: Build package
         working-directory: src/${{ matrix.package }}

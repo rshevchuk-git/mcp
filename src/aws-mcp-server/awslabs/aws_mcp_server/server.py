@@ -222,7 +222,7 @@ async def call_aws(
             response: AwsCliAliasResponse | AwsMcpServerErrorResponse = (
                 execute_awscli_customization(cli_command)
             )
-            if response is AwsMcpServerErrorResponse:
+            if isinstance(response, AwsMcpServerErrorResponse):
                 await ctx.error(response.detail)
             return response
 

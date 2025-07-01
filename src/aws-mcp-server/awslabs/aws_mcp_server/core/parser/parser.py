@@ -14,6 +14,7 @@
 
 import argparse
 import botocore.serialize
+import jmespath
 import re
 from ..aws.regions import GLOBAL_SERVICE_REGIONS
 from ..aws.services import (
@@ -25,6 +26,7 @@ from ..common.command import IRCommand
 from ..common.command_metadata import CommandMetadata
 from ..common.errors import (
     AwsMcpError,
+    ClientSideFilterError,
     CommandValidationError,
     DeniedGlobalArgumentsError,
     ExpectedArgumentError,
@@ -58,6 +60,7 @@ from botocore.exceptions import ParamValidationError, UndefinedModelAttributeErr
 from botocore.model import OperationModel, ServiceModel
 from collections.abc import Generator
 from difflib import SequenceMatcher
+from jmespath.exceptions import ParseError
 from typing import Any, NamedTuple, cast
 
 
@@ -632,13 +635,26 @@ def _construct_command(
     region = getattr(global_args, 'region', None)
     if region is None:
         region = _fetch_region_from_arn(parameters)
+
     client_side_query = getattr(global_args, 'query', None)
+    client_side_filter = None
+
+    if client_side_query is not None:
+        try:
+            client_side_filter = jmespath.compile(client_side_query)
+        except ParseError as error:
+            raise ClientSideFilterError(
+                service=command_metadata.service_sdk_name,
+                operation=command_metadata.operation_sdk_name,
+                client_side_query=client_side_query,
+                msg=str(error),
+            )
 
     return IRCommand(
         command_metadata=command_metadata,
         parameters=parameters,
         region=region,
-        client_side_query=client_side_query,
+        client_side_filter=client_side_filter,
         is_awscli_customization=is_awscli_customization,
     )
 

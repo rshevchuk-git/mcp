@@ -41,7 +41,6 @@ from tests.fixtures import S3_CLI_NO_REGION
                 command=IRCommand(
                     command_metadata=CommandMetadata('s3', None, 'ls'),
                     parameters={},
-                    client_side_query=None,
                     is_awscli_customization=True,
                 ),
                 command_metadata=CommandMetadata('s3', None, 'ls'),
@@ -53,7 +52,6 @@ from tests.fixtures import S3_CLI_NO_REGION
                 command=IRCommand(
                     command_metadata=CommandMetadata('s3', None, 'ls'),
                     parameters={},
-                    client_side_query=None,
                     is_awscli_customization=True,
                 ),
                 command_metadata=CommandMetadata('s3', None, 'ls'),
@@ -65,7 +63,6 @@ from tests.fixtures import S3_CLI_NO_REGION
                 command=IRCommand(
                     command_metadata=CommandMetadata('dynamodb', None, 'wait table-exists'),
                     parameters={'--table-name': 'MyTable'},
-                    client_side_query=None,
                     is_awscli_customization=True,
                 ),
                 command_metadata=CommandMetadata('dynamodb', None, 'wait table-exists'),

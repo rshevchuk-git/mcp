@@ -145,6 +145,7 @@ async def suggest_aws_commands(
     — Always use the most specific service and operation names
     - Always use s3api instead of s3 as service
     — Include --region when operating across regions
+    - Only use filters (--filters, --query, --prefix, --pattern, etc) when necessary or user explicitly asked for it
 
     Command restrictions:
     - DO NOT use bash/zsh pipes (|) or any shell operators

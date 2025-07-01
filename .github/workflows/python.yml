@@ -188,7 +188,7 @@ jobs:
         run: uv run --frozen ruff check .
 
       - name: Run generate-embeddings script if it is aws-mcp-server
-        if: needs.look-for-changes.outputs.changed-directories != [] && needs.look-for-changes.outputs.changed-directories != '' && contains(needs.look-for-changes.outputs.changed-directories, 'aws-mcp-server')
+        if: needs.look-for-changes.outputs.changed-directories != '[]' && needs.look-for-changes.outputs.changed-directories != '' && contains(needs.look-for-changes.outputs.changed-directories, 'aws-mcp-server')
         working-directory: src/${{ matrix.package }}
         run: |
           uv run --frozen generate-embeddings

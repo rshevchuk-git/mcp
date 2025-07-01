@@ -539,3 +539,30 @@ class RequestSerializationError(CommandValidationError):
             reason=str(self),
             context={'service': self._service, 'operation': self._operation, 'msg': self._msg},
         )
+
+
+class ClientSideFilterError(CommandValidationError):
+    """Thrown when JMESPATH expression of the client-side filter could not be parsed."""
+
+    _message = "Error parsing client-side filter '{client_side_query}': {msg}"
+
+    def __init__(self, service: str, operation: str, client_side_query: str, msg: str):
+        """Initialize ClientSideFilterError with details."""
+        message = self._message.format(client_side_query=client_side_query, msg=msg)
+        self._service = service
+        self._operation = operation
+        self._client_side_query = client_side_query
+        self._msg = msg
+        super().__init__(message)
+
+    def as_failure(self) -> Failure:
+        """Return a Failure object representing this error."""
+        return Failure(
+            reason=str(self),
+            context={
+                'service': self._service,
+                'operation': self._operation,
+                'client_side_query': self._client_side_query,
+                'msg': self._msg,
+            },
+        )

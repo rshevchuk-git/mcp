@@ -189,6 +189,7 @@ jobs:
       #   run: uv run --frozen ruff check .
 
       - name: Debug
+        continue-on-error: true
         if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != ''
         working-directory: src/${{ matrix.package }}
         run: |
@@ -196,10 +197,11 @@ jobs:
           echo "::group::NEEDS object"
           echo "${{ toJson(needs) }}"
           echo "::endgroup::"
-
+          echo "${{ needs.detect-packages.outputs.changed-directories }}"
+          echo "${{ fromJson(needs.detect-packages.outputs.changed-directories) }}"
 
       - name: Run generate-embeddings script if it is aws-mcp-server
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(toJson(needs.detect-packagess.outputs.changed-directories), 'aws-mcp-server')
+        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(toJson('["aws-mcp-server"]'), 'aws-mcp-server')
         working-directory: src/${{ matrix.package }}
         run: |
           echo "yes"

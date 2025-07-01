@@ -192,7 +192,7 @@ jobs:
         if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != ''
         working-directory: src/${{ matrix.package }}
         run: |
-          echo "${{ needs.detect-packages.outputs.changed-directories }}""
+          echo "${{ toJson(needs.detect-packages.outputs.changed-directories) }}"
           echo "::group::NEEDS object"
           echo "${{ toJson(needs) }}"
           echo "::endgroup::"

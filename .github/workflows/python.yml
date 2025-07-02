@@ -200,11 +200,17 @@ jobs:
           echo "${{ needs.detect-packages.outputs.changed-directories }}"
           echo "${{ fromJson(needs.detect-packages.outputs.changed-directories) }}"
 
-      - name: Run generate-embeddings script if it is aws-mcp-server
+      - name: Check for existing embeddings or generate new ones if it is aws-mcp-server
         if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
         working-directory: src/${{ matrix.package }}
         run: |
-          uv run --frozen generate-embeddings
+          # First try to download existing embeddings from artifacts
+          if uv run --frozen check-and-download-embeddings; then
+            echo "Successfully downloaded existing embeddings"
+          else
+            echo "No matching embeddings found, generating new ones..."
+            uv run --frozen generate-embeddings
+          fi
 
       - name: Build package
         working-directory: src/${{ matrix.package }}

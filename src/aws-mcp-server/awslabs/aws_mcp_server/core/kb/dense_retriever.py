@@ -14,6 +14,7 @@
 
 import json
 import numpy as np
+from awscli.clidriver import __version__ as awscli_version
 from copy import deepcopy
 from loguru import logger
 from pathlib import Path
@@ -22,6 +23,7 @@ from pathlib import Path
 DEFAULT_TOP_K = 3
 DEFAULT_EMBEDDINGS_MODEL = 'BAAI/bge-base-en-v1.5'
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / 'data' / 'embeddings'
+KNOWLEDGE_BASE_SUFFIX = 'knowledge-base-awscli'
 
 
 class DenseRetriever:
@@ -73,29 +75,35 @@ class DenseRetriever:
     def documents(self):
         """Return the loaded documents."""
         if self._documents is None:
-            self.load_from_cache()
+            try:
+                self.load_from_cache_with_version()
+            except (FileNotFoundError, ImportError):
+                raise FileNotFoundError('No embeddings found for current awscli version')
         return self._documents
 
     @property
     def embeddings(self):
         """Return the loaded embeddings."""
         if self._embeddings is None:
-            self.load_from_cache()
+            try:
+                self.load_from_cache_with_version()
+            except (FileNotFoundError, ImportError):
+                raise FileNotFoundError('No embeddings found for current awscli version')
         return self._embeddings
 
-    @property
-    def cache_file(self):
-        """Return cache file name."""
+    def get_cache_file_with_version(self):
+        """Return cache file name with current awscli version."""
         if self.cache_dir:
-            return Path(self.cache_dir) / f'{self.model_name.replace("/", "-")}.npz'
+            return Path(self.cache_dir) / f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
         return None
 
-    def load_from_cache(self):
-        """Load documents and embeddings from cache file."""
-        if not self.cache_file or not Path(self.cache_file).exists():
-            raise FileNotFoundError(f'Cache file not found: {self.cache_file}')
-        logger.info(f'Loading data from cache: {self.cache_file}')
-        data = np.load(self.cache_file, allow_pickle=False)
+    def load_from_cache_with_version(self):
+        """Load documents and embeddings from versioned cache file."""
+        cache_file = self.get_cache_file_with_version()
+        if not cache_file or not Path(cache_file).exists():
+            raise FileNotFoundError(f'Versioned cache file not found: {cache_file}')
+        logger.info(f'Loading data from versioned cache: {cache_file}')
+        data = np.load(cache_file, allow_pickle=False)
         self._documents = json.loads(str(data['documents']))
         self._embeddings = data['embeddings']
 
@@ -105,12 +113,14 @@ class DenseRetriever:
             raise ValueError('Cache directory is not set')
         if self.embeddings is None:
             raise ValueError('Embeddings are not set')
-        if self.cache_file is None:
+
+        cache_file = self.get_cache_file_with_version()
+        if cache_file is None:
             raise ValueError('Cache file is not set')
-        logger.info(f'Saving data to cache: {self.cache_file}')
+        logger.info(f'Saving data to cache: {cache_file}')
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(
-            self.cache_file,
+            cache_file,
             embeddings=self.embeddings,
             documents=np.array(json.dumps(self.documents)),
         )

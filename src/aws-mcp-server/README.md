@@ -30,9 +30,11 @@ This server bridges the gap between AI assistants and AWS services, allowing you
 
 
 ## Installation
-You can download the AWS MCP Server from GitHub. To get started using your favorite code assistant with MCP support, like Q CLI, Cursor or Cline.
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-light.svg)](https://cursor.com/install-mcp?name=awslabs.aws-mcp-server&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMnV2eCUyMGF3c2xhYnMuYXdzLW1jcC1zZXJ2ZXIlNDBsYXRlc3QlMjIlMkMlMjJlbnYlMjIlM0ElN0IlMjJBV1NfUkVHSU9OJTIyJTNBJTIydXMtZWFzdC0xJTIyJTdEJTdE)
 
-Add the following code to your MCP client configuration (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`). The AWS MCP server uses the default AWS profile by default. Specify a value for `AWS_PROFILE` if you want to use a different profile. Similarly, adjust the AWS Region and log level values as needed.
+Add the following code to your MCP client configuration (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`). 
+
+Remember to remove all comments when you finish configuration, otherwise the config file will not load properly.
 
 ```
 {
@@ -40,11 +42,11 @@ Add the following code to your MCP client configuration (e.g., for Amazon Q Deve
     "awslabs.aws-mcp-server": {
       "command": "uvx",
       "args": [
-        "awslabs.aws-mcp-server@latest",
+        "awslabs.aws-mcp-server@latest"
       ],
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-        "AWS_PROFILE": "profile", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
+        "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false"
       },
@@ -54,8 +56,6 @@ Add the following code to your MCP client configuration (e.g., for Amazon Q Deve
   }
 }
 ```
-
-Remember to remove all comments when you finish configuration, otherwise the config file will not load properly.
 
 Once configured, you can ask your AI assistant questions such as:
 
@@ -101,7 +101,7 @@ To make changes to this MCP locally and run it:
    ```
 
 3. Configure AWS credentials and environment variables:
-   - Ensure you have AWS credentials configured in `~/.aws/credentials` or set the appropriate environment variables.
+   - Ensure you have AWS credentials configured in `~/.aws/credentials` or set the appropriate [environment variables](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#environment-variables) in the MCP server configuration.
    - `export AWS_REGION=us-east-1` or any other region of your preference
 
 

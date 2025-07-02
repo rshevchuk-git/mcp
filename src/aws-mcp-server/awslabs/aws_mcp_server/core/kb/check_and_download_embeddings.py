@@ -28,14 +28,21 @@ from typing import Optional
 
 
 def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
-    """Run a command and return the result."""
+    """Run a command and return the result, printing all output on error."""
     print(f'Running: {" ".join(cmd)}')
-    result = subprocess.run(cmd, capture_output=True, text=True, check=check)
-    if result.stdout:
-        print(f'STDOUT: {result.stdout[:500]}...')  # Truncate long output
-    if result.stderr:
-        print(f'STDERR: {result.stderr}')
-    return result
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=check)
+        if result.stdout:
+            print(f'STDOUT: {result.stdout[:500]}...')  # Truncate long output
+        if result.stderr:
+            print(f'STDERR: {result.stderr}')
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f'Command failed with exit code {e.returncode}')
+        print(f'Command: {" ".join(e.cmd)}')
+        print(f'STDOUT: {e.stdout}')
+        print(f'STDERR: {e.stderr}')
+        raise  # Re-raise so the calling code can handle it as before
 
 
 def get_latest_artifact() -> Optional[dict]:

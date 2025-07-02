@@ -83,7 +83,7 @@ def get_latest_artifact() -> Optional[dict]:
         if all_artifacts:
             latest_artifact = max(all_artifacts, key=lambda x: x['created_at'])
             print(
-                f'Found latest artifact: {latest_artifact["name"]} created at {latest_artifact["created_at"]}'
+                f'Found latest artifact: {latest_artifact["id"]} created at {latest_artifact["created_at"]}'
             )
             return latest_artifact
 

@@ -52,10 +52,6 @@ jobs:
       - name: Should rebuild AWS MCP embeddings
         id: aws-mcp-changed
         run: |
-          echo "=== DEBUGGING CHANGE DETECTION ==="
-          echo "Event: ${{ github.event_name }}"
-          echo "Current SHA: $(git rev-parse HEAD)"
-
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "Base branch: ${{ github.base_ref }}"
             echo "=== CHANGED FILES (PR) ==="
@@ -187,18 +183,6 @@ jobs:
       - name: Run ruff check
         working-directory: src/${{ matrix.package }}
         run: uv run --frozen ruff check .
-
-      - name: Debug
-        continue-on-error: true
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != ''
-        working-directory: src/${{ matrix.package }}
-        run: |
-          echo "${{ toJson(needs.detect-packages.outputs.changed-directories) }}"
-          echo "::group::NEEDS object"
-          echo "${{ toJson(needs) }}"
-          echo "::endgroup::"
-          echo "${{ needs.detect-packages.outputs.changed-directories }}"
-          echo "${{ fromJson(needs.detect-packages.outputs.changed-directories) }}"
 
       - name: Check for existing embeddings or generate new ones if it is aws-mcp-server
         env:

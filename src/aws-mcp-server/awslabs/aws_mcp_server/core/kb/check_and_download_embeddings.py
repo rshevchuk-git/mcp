@@ -279,44 +279,39 @@ def main():
     # Check if embeddings already exist locally
     if check_local_embeddings():
         print('Embeddings already exist locally')
-        return True
+        sys.exit(0)
 
     # Check if GitHub CLI is available
     if not check_gh_cli():
         print('GitHub CLI not available, will generate embeddings')
-        return False
+        sys.exit(1)
 
     # Get latest artifact
     artifact = get_latest_artifact()
     if not artifact:
         print('No artifact found, will generate embeddings')
-        return False
+        sys.exit(1)
 
     # Download and extract artifact
-    success, extracted_dir = download_artifact(artifact)
-    if not success or not extracted_dir:
+    downloaded, extracted_dir = download_artifact(artifact)
+    if not downloaded or not extracted_dir:
         print('Failed to download artifact, will generate embeddings')
-        return False
+        sys.exit(1)
 
     # Check for embeddings file
     embeddings_file = check_embeddings_file(extracted_dir)
     if not embeddings_file:
         print('No matching embeddings file found, will generate embeddings')
         cleanup(extracted_dir.parent)  # Clean up the temp directory
-        return False
+        sys.exit(1)
 
     # Copy embeddings file to current directory
     target_dir = Path('awslabs/aws_mcp_server/core/data/embeddings')
     if copy_embeddings_file(embeddings_file, target_dir):
         print('Successfully copied embeddings file')
         cleanup(extracted_dir.parent)  # Clean up the temp directory
-        return True
+        sys.exit(0)
     else:
         print('Failed to copy embeddings file, will generate embeddings')
         cleanup(extracted_dir.parent)  # Clean up the temp directory
-        return False
-
-
-if __name__ == '__main__':
-    success = main()
-    sys.exit(0 if success else 1)
+        sys.exit(1)

@@ -114,12 +114,6 @@ class InvalidServiceError(CliParsingError):
         return Failure(reason=str(self), context={'service': self._service})
 
 
-class InvalidUseOfS3ServiceError(InvalidServiceError):
-    """Thrown when the provided service is not a real S3 service."""
-
-    _message = "The provided service is not a real S3 service. Use 'aws s3api' instead."
-
-
 class MissingOperationError(CliParsingError):
     """Thrown when the supplied command does not include an operation."""
 
@@ -144,25 +138,6 @@ class InvalidServiceOperationError(CliParsingError):
 
     def __init__(self, service: str, operation: str):
         """Initialize InvalidServiceOperationError with service and operation."""
-        message = self._message.format(operation=operation, service=service)
-        self._operation = operation
-        self._service = service
-        super().__init__(message)
-
-    def as_failure(self) -> Failure:
-        """Return a Failure object representing this error."""
-        return Failure(
-            reason=str(self), context={'service': self._service, 'operation': self._operation}
-        )
-
-
-class InvalidCustomCommandError(CliParsingError):
-    """Thrown when the operation for a service is currently unsupported."""
-
-    _message = 'The operation {operation!r} for service {service!r} is currently unsupported.'
-
-    def __init__(self, service: str, operation: str):
-        """Initialize InvalidCustomCommandError with service and operation."""
         message = self._message.format(operation=operation, service=service)
         self._operation = operation
         self._service = service

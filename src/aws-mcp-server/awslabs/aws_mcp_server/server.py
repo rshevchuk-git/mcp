@@ -91,13 +91,12 @@ READ_OPERATIONS_INDEX: ReadOnlyOperations = ReadOnlyOperations()
     1. "List all running EC2 instances in us-east-1 region"
     2. "Get the size of my S3 bucket named 'my-backup-bucket'"
     3. "List all IAM users who have AdministratorAccess policy"
-    4. "Get the current month's AWS billing for EC2 services"
-    5. "List all Lambda functions in my account"
-    6. "Create a new S3 bucket with versioning enabled and server-side encryption"
-    7. "Update the memory allocation of my Lambda function 'data-processor' to 1024MB"
-    8. "Add a new security group rule to allow inbound traffic on port 443"
-    9. "Tag all EC2 instances in the 'production' environment with 'Environment=prod'"
-    10. "Configure CloudWatch alarms for high CPU utilization on my RDS instance"
+    4. "List all Lambda functions in my account"
+    5. "Create a new S3 bucket with versioning enabled and server-side encryption"
+    6. "Update the memory allocation of my Lambda function 'data-processor' to 1024MB"
+    7. "Add a new security group rule to allow inbound traffic on port 443"
+    8. "Tag all EC2 instances in the 'production' environment with 'Environment=prod'"
+    9. "Configure CloudWatch alarms for high CPU utilization on my RDS instance"
 
     Returns:
         A list of up to 10 most likely AWS CLI commands that could accomplish the task, including:
@@ -141,7 +140,6 @@ async def suggest_aws_commands(
 
     Best practices for command generation:
     — Always use the most specific service and operation names
-    - Always use s3api instead of s3 as service
     — Include --region when operating across regions
     - Only use filters (--filters, --query, --prefix, --pattern, etc) when necessary or user explicitly asked for it
 

@@ -61,7 +61,6 @@ def test_build_result():
         operation_name='ListFunctions',
         operation_parameters={},
         pagination_config={},
-        max_tokens=1000,
     )
 
     functions = result['Functions']
@@ -115,7 +114,6 @@ def test_build_result_with_max_results():
         operation_name='ListFunctions',
         operation_parameters={},
         pagination_config={'MaxItems': 50},
-        max_tokens=1000,
     )
 
     functions = result['Functions']
@@ -125,85 +123,3 @@ def test_build_result_with_max_results():
     assert functions[1].get('FunctionName') == 'my-function-2'
     assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
     assert result.get('pagination_token') is None
-
-
-def test_build_result_max_tokens_first_page():
-    """Test build_result with MaxTokens on the first page."""
-    mock_paginator = Mock()
-    mock_page_iter = MagicMock()
-
-    mock_page_iter.__iter__.return_value = get_pages()
-    mock_page_iter.result_keys = [jmespath.compile('Functions')]
-    mock_page_iter.resume_token = None
-    mock_paginator._pagination_cfg = {'output_token': 'NextToken'}
-    mock_paginator.paginate.return_value = mock_page_iter
-
-    result = build_result(
-        paginator=mock_paginator,
-        service_name='lambda',
-        operation_name='ListFunctions',
-        operation_parameters={},
-        pagination_config={},
-        max_tokens=1,
-    )
-
-    functions = result['Functions']
-
-    assert len(functions) == 1
-    assert functions[0].get('FunctionName') == 'my-function-1'
-    assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
-    assert result.get('pagination_token') is not None
-
-
-def test_build_result_max_tokens_second_page():
-    """Test build_result with MaxTokens on the second page."""
-    mock_paginator = Mock()
-    mock_page_iter = MagicMock()
-
-    mock_page_iter.__iter__.return_value = get_pages()
-    mock_page_iter.result_keys = [jmespath.compile('Functions')]
-    mock_page_iter.resume_token = 'PaginationToken'
-    mock_paginator._pagination_cfg = {'output_token': 'NextToken'}
-    mock_paginator.paginate.return_value = mock_page_iter
-
-    result = build_result(
-        paginator=mock_paginator,
-        service_name='lambda',
-        operation_name='ListFunctions',
-        operation_parameters={},
-        pagination_config={},
-        max_tokens=150,  # Only first page fits within the token limit
-    )
-
-    functions = result['Functions']
-
-    assert len(functions) == 1
-    assert functions[0].get('FunctionName') == 'my-function-1'
-    assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
-    assert result.get('pagination_token') is not None
-
-
-def test_build_result_max_tokens_first_page_with_client_side_filter():
-    """Test build_result with MaxTokens on the first page and a client-side filter."""
-    mock_paginator = Mock()
-    mock_page_iter = MagicMock()
-
-    mock_page_iter.__iter__.return_value = get_pages()
-    mock_page_iter.result_keys = [jmespath.compile('Functions')]
-    mock_page_iter.resume_token = None
-    mock_paginator._pagination_cfg = {'output_token': 'NextToken'}
-    mock_paginator.paginate.return_value = mock_page_iter
-
-    result = build_result(
-        paginator=mock_paginator,
-        service_name='lambda',
-        operation_name='ListFunctions',
-        operation_parameters={},
-        pagination_config={},
-        client_side_filter=jmespath.compile('Functions[].FunctionName'),
-        max_tokens=1,
-    )
-
-    assert result['Result'] == ['my-function-1']
-    assert (result.get('ResponseMetadata') or {}).get('HTTPStatusCode') == 200
-    assert result.get('pagination_token') is not None

@@ -12,69 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import time
 from .services import PaginationConfig
 from botocore.paginate import PageIterator, Paginator
 from botocore.utils import merge_dicts, set_value_from_jmespath
 from jmespath.parser import ParsedResult
 from loguru import logger
 from typing import Any
-
-
-PAGINATION_TIMEOUT = 4  # seconds
-
-
-def estimate_llm_tokens(page: str) -> int:
-    """This function estimates the amount of tokens the LLM would consume to process the given page (JSON).
-
-    1 token ~= 4 characters. Curly brackets consume a single token.
-    """
-    characters_per_token = 4
-    curly_brackets = (
-        page.count('{') * 2  # we multiply by 2 because there will always be a matching '}'
-    )
-    return round((len(page) - curly_brackets) / characters_per_token + curly_brackets)
-
-
-def _process_token_limits(
-    remaining_tokens: int | None,
-    page: dict[str, Any],
-    is_first_page: bool,
-    client_side_filter: ParsedResult | None,
-) -> tuple[int | None, bool]:
-    if remaining_tokens is None:
-        return remaining_tokens, False
-
-    if client_side_filter is not None:
-        remaining_tokens -= estimate_llm_tokens(
-            json.dumps(client_side_filter.search(page), default=str)
-        )
-    else:
-        remaining_tokens -= estimate_llm_tokens(json.dumps(page, default=str))
-
-    should_stop = not is_first_page and remaining_tokens < 0
-    if should_stop:
-        logger.info('Reached max_tokens limit while paginating.')
-
-    return remaining_tokens, should_stop
-
-
-def _should_stop_early(
-    elapsed_time: float,
-    remaining_tokens: int | None,
-    is_first_page: bool,
-) -> bool:
-    if elapsed_time > PAGINATION_TIMEOUT:
-        logger.info('Reached pagination timeout.')
-        return True
-
-    if remaining_tokens is not None and remaining_tokens < 0 and is_first_page:
-        # We always process the first page regardless of the amount of tokens
-        logger.info('Reached max_tokens limit on first page.')
-        return True
-
-    return False
 
 
 def _merge_page_into_result(
@@ -114,7 +57,6 @@ def _merge_page_into_result(
 def _finalize_result(
     result: dict[str, Any],
     page_iterator: PageIterator,
-    pages_processed: int,
     response_metadata: dict[str, Any] | None,
     client_side_filter: ParsedResult | None,
 ) -> dict[str, Any]:
@@ -130,7 +72,6 @@ def _finalize_result(
     if page_iterator.resume_token is not None:
         result['pagination_token'] = page_iterator.resume_token
 
-    logger.info(f'Processed {pages_processed} pages.')
     return result
 
 
@@ -140,7 +81,6 @@ def build_result(
     operation_name: str,
     operation_parameters: dict[str, Any],
     pagination_config: PaginationConfig,
-    max_tokens: int | None = None,
     client_side_filter: ParsedResult | None = None,
 ):
     """This function is based on build_full_result in botocore with some modifications.
@@ -151,9 +91,6 @@ def build_result(
     """
     result: dict[str, Any] = {}
     response_metadata = None
-    remaining_tokens = max_tokens
-    pages_processed = 0
-    start_time = time.time()
 
     logger.info(
         f'Building pagination result for {service_name} {operation_name} with config: {pagination_config}'
@@ -161,32 +98,15 @@ def build_result(
     page_iterator = paginator.paginate(**operation_parameters, PaginationConfig=pagination_config)
 
     for response in page_iterator:
-        is_first_page = pages_processed == 0
         page = response
 
         # operation object pagination comes in a tuple of two elements: (http_response, parsed_response)
         if isinstance(response, tuple) and len(response) == 2:
             page = response[1]
 
-        remaining_tokens, should_stop_for_tokens = _process_token_limits(
-            remaining_tokens, page, is_first_page, client_side_filter
-        )
-        if should_stop_for_tokens:
-            break
-
         # For each page in the response we need to inject the necessary components from the page into the result.
         _merge_page_into_result(result, page, page_iterator)
-        pages_processed += 1
 
         response_metadata = page.get('ResponseMetadata')
 
-        elapsed_time = time.time() - start_time
-        if _should_stop_early(elapsed_time, remaining_tokens, is_first_page):
-            if is_first_page:
-                # Setting resume_token manually because this is not populated if we only process the first page.
-                page_iterator.resume_token = page_iterator._get_next_token(page)
-            break
-
-    return _finalize_result(
-        result, page_iterator, pages_processed, response_metadata, client_side_filter
-    )
+    return _finalize_result(result, page_iterator, response_metadata, client_side_filter)

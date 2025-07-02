@@ -71,7 +71,6 @@ def interpret_command(
     session_token: str | None,
     default_region: str,
     max_results: int | None = None,
-    max_tokens: int | None = None,
     is_counting: bool | None = None,
 ) -> InterpretedProgram:
     """Interpret the CLI command.
@@ -103,7 +102,6 @@ def interpret_command(
             region=region,
             client_side_filter=translation.command.client_side_filter,
             max_results=max_results,
-            max_tokens=max_tokens,
             is_counting=is_counting,
         )
     except botocore.exceptions.ClientError as error:

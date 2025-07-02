@@ -16,6 +16,7 @@
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -28,11 +29,11 @@ from pathlib import Path
 from typing import Optional
 
 
-def run_command(command: str) -> subprocess.CompletedProcess:
+def run_command(command: list[str]) -> subprocess.CompletedProcess:
     """Run a command and return the result, printing all output on error."""
-    print(f'Running: {command}')
+    print(f'Running: {" ".join(command)}')
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True, shell=True)
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
         if result.stderr:
             print(f'STDERR: {result.stderr}')
         return result
@@ -50,15 +51,28 @@ def get_latest_artifact() -> Optional[dict]:
         repo = os.environ.get('GITHUB_REPOSITORY', 'awslabs/mcp')
         owner = repo.split('/')[0]
 
-        cmd_str = (
-            "gh api --paginate -H 'Accept: application/vnd.github+json' "
-            "-H 'X-GitHub-Api-Version: 2022-11-28' "
-            f"'/repos/{owner}/mcp/actions/artifacts?name=dist-aws-mcp-server&per_page=100' "
-            "| jq -s '[.[] | .artifacts[]]'"
-        )
+        cmd = [
+            'gh',
+            'api',
+            '--paginate',
+            '-H',
+            'Accept: application/vnd.github+json',
+            '-H',
+            'X-GitHub-Api-Version: 2022-11-28',
+            f'/repos/{owner}/mcp/actions/artifacts?name=dist-aws-mcp-server&per_page=100',
+        ]
 
-        result = run_command(cmd_str)
-        all_artifacts = json.loads(result.stdout)
+        result = run_command(cmd)
+
+        # Remove whitespace between objects, add commas, and wrap in []
+        json_objects = re.sub(r'}\s*{', '},{', result.stdout.strip())
+        json_array_str = f'[{json_objects}]'
+        try:
+            pages = json.loads(json_array_str)
+            all_artifacts = [artifact for page in pages for artifact in page.get('artifacts', [])]
+        except Exception as e:
+            print(f'Error parsing paginated JSON: {e}')
+            return None
 
         # Sort by creation date and get the latest
         if all_artifacts:

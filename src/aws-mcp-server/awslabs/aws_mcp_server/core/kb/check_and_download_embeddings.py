@@ -1,5 +1,18 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #!/usr/bin/env python3
-"""Script to check for existing embeddings in GitHub artifacts and download them if they match the current awscli version."""
 
 import json
 import os
@@ -78,6 +91,38 @@ def get_latest_artifact() -> Optional[dict]:
         return None
 
 
+def is_within_directory(directory: Path, target: Path) -> bool:
+    """Check if the target path is within the given directory."""
+    try:
+        directory = directory.resolve()
+        target = target.resolve()
+        return str(target).startswith(str(directory))
+    except Exception:
+        return False
+
+
+def safe_extract_zip(zip_ref: zipfile.ZipFile, path: Path):
+    """Safely extract zip file to the given path, preventing path traversal."""
+    for member in zip_ref.namelist():
+        member_path = path / member
+        if not is_within_directory(path, member_path):
+            raise Exception(f'Unsafe zip file member: {member}')
+        # Create parent directories if needed
+        member_path.parent.mkdir(parents=True, exist_ok=True)
+        if not member.endswith('/'):  # skip directories
+            with zip_ref.open(member) as source, open(member_path, 'wb') as target:
+                target.write(source.read())
+
+
+def safe_extract_tar(tar_ref: tarfile.TarFile, path: Path):
+    """Safely extract tar file to the given path, preventing path traversal."""
+    for member in tar_ref.getmembers():
+        member_path = path / member.name
+        if not is_within_directory(path, member_path):
+            raise Exception(f'Unsafe tar file member: {member.name}')
+        tar_ref.extract(member, path)
+
+
 def download_artifact(artifact: dict) -> tuple[bool, Optional[Path]]:
     """Download the artifact and extract it. Returns (success, extracted_dir_path)."""
     temp_dir = None
@@ -109,7 +154,7 @@ def download_artifact(artifact: dict) -> tuple[bool, Optional[Path]]:
 
         # Extract the zip file
         with zipfile.ZipFile(artifact_zip, 'r') as zip_ref:
-            zip_ref.extractall(temp_dir)
+            safe_extract_zip(zip_ref, temp_dir)
 
         print('Extracted artifact.zip')
 
@@ -124,7 +169,7 @@ def download_artifact(artifact: dict) -> tuple[bool, Optional[Path]]:
 
         # Extract the tar.gz file
         with tarfile.open(tar_file, 'r:gz') as tar_ref:
-            tar_ref.extractall(temp_dir)
+            safe_extract_tar(tar_ref, temp_dir)
 
         print(f'Extracted {tar_file}')
 

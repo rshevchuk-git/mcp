@@ -55,14 +55,14 @@ jobs:
           echo "=== DEBUGGING CHANGE DETECTION ==="
           echo "Event: ${{ github.event_name }}"
           echo "Current SHA: $(git rev-parse HEAD)"
-          
+
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "Base branch: ${{ github.base_ref }}"
             echo "=== CHANGED FILES (PR) ==="
             git diff --name-only origin/${{ github.base_ref }}...HEAD
             echo "=== FILES MATCHING PATTERN (PR) ==="
             git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^src/aws-mcp-server/" || echo "No matches found"
-            
+
             if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^src/aws-mcp-server/"; then
               echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
               echo "✅ PR changes detected - setting aws-mcp-changed=true"
@@ -77,7 +77,7 @@ jobs:
             git diff --name-only ${{ github.event.before }} ${{ github.sha }}
             echo "=== FILES MATCHING PATTERN (PUSH) ==="
             git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^src/aws-mcp-server/" || echo "No matches found"
-            
+
             if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^src/aws-mcp-server/"; then
               echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
               echo "✅ Push changes detected - setting aws-mcp-changed=true"

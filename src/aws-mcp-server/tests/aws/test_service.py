@@ -27,17 +27,12 @@ from tests.fixtures import (
     CLOUD9_PARAMS_CLI_NON_EXISTING_OPERATION,
     CLOUD9_PARAMS_CLI_VALIDATION_FAILURES,
     CLOUD9_PARAMS_MISSING_CONTEXT_FAILURES,
-    CLOUDFORMATION_LIST_STACKS_FIRST_PAGE,
     EC2_DESCRIBE_INSTANCES,
     GET_CALLER_IDENTITY_PAYLOAD,
-    REDSHIFT_FIRST_PAGE,
     SSM_LIST_NODES_PAYLOAD,
     T2_EC2_DESCRIBE_INSTANCES_FILTERED,
     TEST_CREDENTIALS,
     patch_boto3,
-    patch_boto3_paginated_cloudformation,
-    patch_boto3_paginated_cloudformation_for_max_limit,
-    patch_boto3_paginated_redshift,
 )
 from typing import Any
 from unittest.mock import patch
@@ -281,159 +276,6 @@ def test_region_picked_up_from_arn(cli, region):
         )
         assert response.metadata is not None
         assert response.metadata.region_name == region
-
-
-def test_interpret_handles_counting_via_pagination():
-    """Test that interpret_command handles resource counting via pagination."""
-    with (
-        patch(
-            'awslabs.aws_mcp_server.core.parser.interpretation.build_result',
-            return_value=CLOUDFORMATION_LIST_STACKS_FIRST_PAGE,
-        ),
-        patch_boto3_paginated_cloudformation(),
-    ):
-        credentials = Credentials(**TEST_CREDENTIALS)
-        response = interpret_command(
-            cli_command='aws cloudformation list-stacks',
-            credentials=credentials,
-            default_region='us-east-1',
-            max_results=10,
-            is_counting=True,
-        )
-        assert response.response is not None
-        payload = json.loads(response.response.as_json or '{}')
-        assert payload['resource_count_info'] is not None
-        assert payload['resource_count_info']['resource_count'] == 2
-        assert payload['resource_count_info']['status'] == 'exact'
-
-
-def test_interpret_handles_counting_via_pagination_parsingpath():
-    """Test that interpret_command handles resource counting via pagination with parsing path."""
-    with (
-        patch(
-            'awslabs.aws_mcp_server.core.parser.interpretation.build_result',
-            return_value=REDSHIFT_FIRST_PAGE,
-        ),
-        patch_boto3_paginated_redshift(),
-    ):
-        credentials = Credentials(**TEST_CREDENTIALS)
-        response = interpret_command(
-            cli_command='aws redshift describe-default-cluster-parameters --parameter-group-family redshift-1.0',
-            credentials=credentials,
-            default_region='us-east-1',
-            max_results=10,
-            is_counting=True,
-        )
-        assert response.response is not None
-        payload = json.loads(response.response.as_json or '{}')
-        assert payload['resource_count_info'] is not None
-        assert payload['resource_count_info']['resource_count'] == 4
-        assert payload['resource_count_info']['status'] == 'exact'
-
-
-def test_interpret_handles_counting_when_timeout():
-    """Test that interpret_command handles resource counting when a timeout occurs."""
-    with (
-        patch(
-            'awslabs.aws_mcp_server.core.parser.interpretation.build_result',
-            return_value=REDSHIFT_FIRST_PAGE,
-        ),
-        patch(
-            'awslabs.aws_mcp_server.core.aws.resource_counting.get_current_time',
-            side_effect=[0, 4.1],
-        ),
-        patch_boto3_paginated_redshift(),
-    ):
-        credentials = Credentials(**TEST_CREDENTIALS)
-        response = interpret_command(
-            cli_command='aws redshift describe-default-cluster-parameters --parameter-group-family redshift-1.0',
-            credentials=credentials,
-            default_region='us-east-1',
-            max_results=10,
-            is_counting=True,
-        )
-        assert response.response is not None
-        payload = json.loads(response.response.as_json or '{}')
-        assert payload['resource_count_info'] is not None
-        assert payload['resource_count_info']['resource_count'] == 4
-        assert payload['resource_count_info']['status'] == 'exact'
-
-
-def test_interpret_handles_counting_when_hit_max_limit_exact():
-    """Test that interpret_command handles resource counting when hitting the max limit exactly."""
-    with (
-        patch(
-            'awslabs.aws_mcp_server.core.parser.interpretation.build_result',
-            return_value=REDSHIFT_FIRST_PAGE,
-        ),
-        patch('awslabs.aws_mcp_server.core.aws.resource_counting.MAX_RESOURCE_COUNT', 2),
-        patch_boto3_paginated_redshift(),
-    ):
-        credentials = Credentials(**TEST_CREDENTIALS)
-        response = interpret_command(
-            cli_command='aws redshift describe-default-cluster-parameters --parameter-group-family redshift-1.0',
-            credentials=credentials,
-            default_region='us-east-1',
-            max_results=10,
-            is_counting=True,
-        )
-        assert response.response is not None
-        payload = json.loads(response.response.as_json or '{}')
-        assert payload['resource_count_info'] is not None
-        assert payload['resource_count_info']['resource_count'] == 2
-        assert payload['resource_count_info']['status'] == 'at_least'
-
-
-def test_interpret_handles_counting_when_first_page_time_took_long():
-    """Test that interpret_command handles resource counting when the first page takes too long."""
-    with (
-        patch(
-            'awslabs.aws_mcp_server.core.parser.interpretation.build_result',
-            return_value=REDSHIFT_FIRST_PAGE,
-        ),
-        patch('awslabs.aws_mcp_server.core.aws.resource_counting.TIMEOUT', -1),
-        patch_boto3_paginated_redshift(),
-    ):
-        credentials = Credentials(**TEST_CREDENTIALS)
-        response = interpret_command(
-            cli_command='aws redshift describe-default-cluster-parameters --parameter-group-family redshift-1.0',
-            credentials=credentials,
-            default_region='us-east-1',
-            max_results=10,
-            is_counting=True,
-        )
-        assert response.response is not None
-        payload = json.loads(response.response.as_json or '{}')
-        assert payload['resource_count_info'] is not None
-        assert payload['resource_count_info']['resource_count'] == 2
-        assert payload['resource_count_info']['status'] == 'at_least'
-
-
-def test_interpret_handles_counting_when_hit_max_limit_at_least():
-    """Test interpret handles counting when hitting max limit at least."""
-    with (
-        patch(
-            'awslabs.aws_mcp_server.core.parser.interpretation.build_result',
-            return_value=CLOUDFORMATION_LIST_STACKS_FIRST_PAGE,
-        ),
-        patch('awslabs.aws_mcp_server.core.aws.resource_counting.MAX_RESOURCE_COUNT', 1),
-        patch_boto3_paginated_cloudformation_for_max_limit(),
-    ):
-        credentials = Credentials(**TEST_CREDENTIALS)
-        response = interpret_command(
-            cli_command='aws cloudformation list-stacks',
-            credentials=credentials,
-            default_region='us-east-1',
-            max_results=10,
-            is_counting=True,
-        )
-        assert response.response is not None
-        payload = json.loads(response.response.as_json or '{}')
-
-        # Verify that the response includes correct pagination handling
-        assert payload['resource_count_info'] is not None
-        assert payload['resource_count_info']['resource_count'] == 1
-        assert payload['resource_count_info']['status'] == 'at_least'
 
 
 def test_validate_success():

@@ -49,7 +49,6 @@ htmlcov/
 *.spec
 .pybuilder/
 target/
-*.npz
 
 # Environments
 .env

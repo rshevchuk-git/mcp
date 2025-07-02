@@ -16,6 +16,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -27,13 +28,11 @@ from pathlib import Path
 from typing import Optional
 
 
-def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
+def run_command(command: str) -> subprocess.CompletedProcess:
     """Run a command and return the result, printing all output on error."""
-    print(f'Running: {" ".join(cmd)}')
+    print(f'Running: {command}')
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=check)
-        if result.stdout:
-            print(f'STDOUT: {result.stdout[:500]}...')  # Truncate long output
+        result = subprocess.run(command, capture_output=True, text=True, check=True, shell=True)
         if result.stderr:
             print(f'STDERR: {result.stderr}')
         return result
@@ -42,50 +41,36 @@ def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProce
         print(f'Command: {" ".join(e.cmd)}')
         print(f'STDOUT: {e.stdout}')
         print(f'STDERR: {e.stderr}')
-        raise  # Re-raise so the calling code can handle it as before
+        raise
 
 
 def get_latest_artifact() -> Optional[dict]:
     """Get the latest dist-aws-mcp-server artifact from GitHub."""
     try:
-        # Get repository owner from GITHUB_REPOSITORY environment variable
         repo = os.environ.get('GITHUB_REPOSITORY', 'awslabs/mcp')
         owner = repo.split('/')[0]
 
-        # Get artifacts (first page only)
-        cmd = [
-            'gh',
-            'api',
-            '-H',
-            'Accept: application/vnd.github+json',
-            '-H',
-            'X-GitHub-Api-Version: 2022-11-28',
-            f'/repos/{owner}/mcp/actions/artifacts?name=dist-aws-mcp-server&per_page=10',
-        ]
+        cmd_str = (
+            "gh api --paginate -H 'Accept: application/vnd.github+json' "
+            "-H 'X-GitHub-Api-Version: 2022-11-28' "
+            f"'/repos/{owner}/mcp/actions/artifacts?name=dist-aws-mcp-server&per_page=100' "
+            "| jq -s '[.[] | .artifacts[]]'"
+        )
 
-        result = run_command(cmd)
-
-        # Parse the response - GitHub API returns a single JSON object
-        try:
-            artifacts_data = json.loads(result.stdout)
-            if 'artifacts' in artifacts_data:
-                all_artifacts = artifacts_data['artifacts']
-                print(f'Found {len(all_artifacts)} artifacts in response')
-            else:
-                print('No artifacts found in response')
-                all_artifacts = []
-        except json.JSONDecodeError as e:
-            print(f'Error parsing JSON response: {e}')
-            print(f'Response preview: {result.stdout[:500]}...')
-            all_artifacts = []
+        result = run_command(cmd_str)
+        all_artifacts = json.loads(result.stdout)
 
         # Sort by creation date and get the latest
         if all_artifacts:
-            latest_artifact = max(all_artifacts, key=lambda x: x['created_at'])
-            print(
-                f'Found latest artifact: {latest_artifact["id"]} created at {latest_artifact["created_at"]}'
-            )
-            return latest_artifact
+            main_branch_artifacts = [
+                a for a in all_artifacts if a.get('workflow_run', {}).get('head_branch') == 'main'
+            ]
+            if main_branch_artifacts:
+                latest_artifact = max(main_branch_artifacts, key=lambda x: x['created_at'])
+                print(
+                    f'Found latest artifact: {latest_artifact["id"]} created at {latest_artifact["created_at"]}'
+                )
+                return latest_artifact
 
         print('No artifacts found')
         return None
@@ -225,9 +210,6 @@ def copy_embeddings_file(embeddings_file: Path, target_dir: Path) -> bool:
         target_dir.mkdir(parents=True, exist_ok=True)
         target_file = target_dir / embeddings_file.name
 
-        # Copy the file
-        import shutil
-
         shutil.copy2(embeddings_file, target_file)
         print(f'Copied embeddings file to: {target_file}')
         return True
@@ -241,8 +223,6 @@ def cleanup(temp_dir: Optional[Path] = None):
     """Clean up temporary directory."""
     if temp_dir and temp_dir.exists():
         try:
-            import shutil
-
             shutil.rmtree(temp_dir)
             print(f'Removed temporary directory: {temp_dir}')
         except Exception as e:
@@ -272,16 +252,14 @@ def check_gh_cli() -> bool:
         result = subprocess.run(['gh', '--version'], capture_output=True, text=True, check=True)
         print(f'GitHub CLI version: {result.stdout.split()[2]}')
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError:
         print('GitHub CLI not available')
         return False
 
 
 def main():
-    """Main function."""
-    print('Checking for existing embeddings...')
-
-    print(f'Current awscli version: {awscli_version}')
+    """Check if embeddings artifact exists and download latest if it doesn't."""
+    print(f'Checking for existing embeddings. Current awscli version: {awscli_version}')
 
     # Check if embeddings already exist locally
     if check_local_embeddings():

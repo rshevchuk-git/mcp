@@ -201,6 +201,8 @@ jobs:
           echo "${{ fromJson(needs.detect-packages.outputs.changed-directories) }}"
 
       - name: Check for existing embeddings or generate new ones if it is aws-mcp-server
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
         if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
         working-directory: src/${{ matrix.package }}
         run: |

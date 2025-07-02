@@ -25,7 +25,6 @@ from .core.aws.service import (
 from .core.common.config import (
     DEFAULT_REGION,
     FASTMCP_LOG_LEVEL,
-    MAX_OUTPUT_TOKENS,
     RAG_TYPE,
     READ_ONLY_KEY,
     READ_OPERATIONS_ONLY_MODE,
@@ -232,7 +231,6 @@ async def call_aws(
             credentials=creds,
             default_region=cast(str, DEFAULT_REGION),
             max_results=max_results,
-            max_tokens=int(MAX_OUTPUT_TOKENS) if MAX_OUTPUT_TOKENS else None,
             is_counting=is_counting,
         )
     except NoCredentialsError:

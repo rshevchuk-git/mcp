@@ -14,8 +14,7 @@
 
 import awscli.clidriver
 import re
-from botocore.exceptions import DataNotFoundError
-from botocore.model import OperationModel, StringShape
+from botocore.model import OperationModel
 from collections.abc import Set
 from loguru import logger
 from lxml import html
@@ -31,66 +30,6 @@ class ConfigResult(NamedTuple):
     parameters: dict[str, Any]
     pagination_config: PaginationConfig
 
-
-# Explicit list of parameters that are not compatible with pagination
-# (service, operation): parameters
-PAGINATION_INCOMPATIBLE = {
-    ('ec2', 'DescribeInstanceImageMetadata'): ('InstanceIds',),
-    ('ec2', 'DescribeCarrierGateways'): ('CarrierGatewayIds',),
-    ('ec2', 'DescribeClientVpnEndpoints'): ('ClientVpnEndpointIds',),
-    ('ec2', 'DescribeCoipPools'): ('PoolIds',),
-    ('ec2', 'DescribeDhcpOptions'): ('DhcpOptionsIds',),
-    ('ec2', 'DescribeElasticGpus'): ('ElasticGpuIds',),
-    ('ec2', 'DescribeImages'): ('ImageIds',),
-    ('ec2', 'DescribeInstanceCreditSpecifications'): ('InstanceIds',),
-    ('ec2', 'DescribeInstanceStatus'): ('InstanceIds',),
-    ('ec2', 'DescribeInstanceTopology'): ('InstanceIds',),
-    ('ec2', 'DescribeInstances'): ('InstanceIds',),
-    ('ec2', 'DescribeInternetGateways'): ('InternetGatewayIds',),
-    ('ec2', 'DescribeIpamPools'): ('IpamPoolIds',),
-    ('ec2', 'DescribeIpamResourceDiscoveries'): ('IpamResourceDiscoveryIds',),
-    ('ec2', 'DescribeIpamResourceDiscoveryAssociations'): ('IpamResourceDiscoveryAssociationIds',),
-    ('ec2', 'DescribeIpamScopes'): ('IpamScopeIds',),
-    ('ec2', 'DescribeIpams'): ('IpamIds',),
-    ('ec2', 'DescribeNetworkAcls'): ('NetworkAclIds',),
-    ('ec2', 'DescribeNetworkInterfaces'): ('NetworkInterfaceIds',),
-    ('ec2', 'DescribeRouteTables'): ('RouteTableIds',),
-    ('ec2', 'DescribeSecurityGroupRules'): ('SecurityGroupRuleIds',),
-    ('ec2', 'DescribeSecurityGroups'): ('GroupIds', 'GroupNames'),
-    ('ec2', 'DescribeSnapshots'): ('SnapshotIds',),
-    ('ec2', 'DescribeSpotInstanceRequests'): ('SpotInstanceRequestIds',),
-    ('ec2', 'DescribeSubnets'): ('SubnetIds',),
-    ('ec2', 'DescribeVerifiedAccessEndpoints'): ('VerifiedAccessEndpointIds',),
-    ('ec2', 'DescribeVerifiedAccessGroups'): ('VerifiedAccessGroupIds',),
-    ('ec2', 'DescribeVerifiedAccessInstanceLoggingConfigurations'): ('VerifiedAccessInstanceIds',),
-    ('ec2', 'DescribeVerifiedAccessInstances'): ('VerifiedAccessInstanceIds',),
-    ('ec2', 'DescribeVerifiedAccessTrustProviders'): ('VerifiedAccessTrustProviderIds',),
-    ('ec2', 'DescribeVolumeStatus'): ('VolumeIds',),
-    ('ec2', 'DescribeVolumes'): ('VolumeIds',),
-    ('ec2', 'DescribeVpcs'): ('VpcIds',),
-    ('ec2', 'DescribeInstanceTypes'): ('InstanceTypes'),
-    ('ec2', 'DescribeVpcPeeringConnections'): ('VpcPeeringConnectionIds'),
-    ('elbv2', 'DescribeLoadBalancers'): ('Names',),
-}
-
-
-# Overrides for MaxResults min and max values
-# Some services only enforce them server-side
-def get_max_result_override(service_name: str, operation_name: str) -> dict[str, int] | None:
-    """Return max result override for specific service and operation if applicable."""
-    if service_name == 'rds' and operation_name.startswith('Describe'):
-        return {
-            'min': 20,
-            'max': 100,
-        }
-
-    return None
-
-
-PAGE_SIZE = 20
-GET_METRIC_DATA_MAX_RESULTS_OVERRIDE = (
-    3900  # Maximum number of datapoints to return, limited for better LLM processing
-)
 
 filter_query = re.compile(r'^\s+([-a-z0-9_.]+|tag:<key>)\s+')
 
@@ -213,132 +152,24 @@ def get_operation_filters(operation: OperationModel) -> OperationFilters:
     return OperationFilters(filter_keys, filter_set, allows_tag_key)
 
 
-def find_operation_max_results_key(service_name: str, operation_name: str) -> str | None:
-    """Find a given operation's max results key if the number of results can be bounded."""
-    try:
-        paginator = session.get_paginator_model(service_name)
-    except DataNotFoundError:
-        return None
-
-    paginator_config = paginator._paginator_config
-    op_config = paginator_config.get(operation_name)
-    if not op_config:
-        return None
-
-    return op_config.get('limit_key')
-
-
-def is_pagination_compatible(
-    parameters: dict[str, Any],
-    service_name: str,
-    operation_name: str,
-) -> bool:
-    """Check if the operation is compatible with pagination."""
-    incompatible_keys = PAGINATION_INCOMPATIBLE.get((service_name, operation_name))
-    if incompatible_keys is not None and any(key in incompatible_keys for key in parameters):
-        return False
-
-    max_results_key = find_operation_max_results_key(
-        service_name=service_name, operation_name=operation_name
-    )
-    if max_results_key is None:
-        return False
-
-    return True
-
-
-def update_parameters_with_max_results(
-    parameters: dict[str, Any],
-    service_name: str,
-    operation_name: str,
-    max_results: str | int | None = None,
-) -> dict[str, Any]:
-    """Update parameters with max results for pagination."""
-    if (
-        is_pagination_compatible(parameters, service_name, operation_name)
-        and max_results is not None
-    ):
-        max_results_key = find_operation_max_results_key(
-            service_name=service_name, operation_name=operation_name
-        )
-        if max_results_key is not None:
-            max_results_shape = (
-                session.get_service_model(service_name)
-                .operation_model(operation_name)
-                .input_shape.members.get(max_results_key)  # type: ignore[attr-defined]
-            )
-
-            # Some operations accept strings for max_results
-            if isinstance(max_results_shape, StringShape):
-                max_results = str(max_results)
-
-            parameters.update(**{max_results_key: max_results})
-
-    return parameters
-
-
 def extract_pagination_config(
     parameters: dict[str, Any],
-    service_name: str,
-    operation_name: str,
     max_results: int | None = None,
 ) -> ConfigResult:
     """Extract pagination configuration from parameters."""
-    # Some APIs like the EC2 operations allow specifying extra pagination options like max-results
-    cli_max_results = parameters.pop('MaxResults', None)
-    if cli_max_results is not None and max_results is not None:
-        max_results = min(int(cli_max_results), max_results)
-    elif cli_max_results is not None:
-        max_results = int(cli_max_results)
-
     pagination_config = parameters.pop('PaginationConfig', {})
-    pagination_config_max_results = pagination_config.pop('MaxItems', None)
 
-    if 'PageSize' not in pagination_config and is_pagination_compatible(
-        parameters, service_name, operation_name
-    ):
-        pagination_config['PageSize'] = PAGE_SIZE
-
-    max_results = pagination_config_max_results or max_results
     if max_results is None:
-        # Unbounded call so nothing to do here
         return ConfigResult(parameters, pagination_config)
 
-    max_results_key = find_operation_max_results_key(
-        service_name=service_name, operation_name=operation_name
-    )
-    if max_results_key is None:
-        # Return the parameters unmodified, this operation *might* not support pagination
-        return ConfigResult(parameters, pagination_config)
+    max_items = pagination_config.pop('MaxItems', None)
 
-    max_results_shape = (
-        session.get_service_model(service_name)
-        .operation_model(operation_name)
-        .input_shape.members.get(max_results_key)  # type: ignore[attr-defined]
-    )
-
-    # Override MaxResults bounds with server side limits if available
-    max_result_bounds = get_max_result_override(service_name, operation_name)
-    if not max_result_bounds:
-        max_result_bounds = max_results_shape.metadata  # type: ignore[attr-defined]
-
-    # Apply custom limits
-    max_results_value = int(max_results)
-
-    if max_result_bounds:
-        max_results_value = max(
-            max_results_value, int(max_result_bounds.get('min', max_results_value))
-        )
-        max_results_value = min(
-            max_results_value, int(max_result_bounds.get('max', max_results_value))
-        )
-
-    if limit := _get_max_results_limit(service_name, operation_name):
-        max_results = min(max_results_value, limit)
+    if max_items is not None:
+        max_items = min(int(max_items), max_results)
     else:
-        max_results = max_results_value
+        max_items = max_results
 
-    pagination_config['MaxItems'] = max_results
+    pagination_config['MaxItems'] = max_items
     return ConfigResult(parameters, pagination_config)
 
 
@@ -360,10 +191,3 @@ def check_service_has_default_region(service: str, region: str):
             return True
 
     return False
-
-
-def _get_max_results_limit(service_name: str, operation_name: str) -> int | None:
-    if service_name == 'cloudwatch' and operation_name == 'GetMetricData':
-        return GET_METRIC_DATA_MAX_RESULTS_OVERRIDE
-
-    return None

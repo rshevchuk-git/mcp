@@ -19,7 +19,6 @@ from ..aws.pagination import build_result
 from ..aws.resource_counting import count_resources_via_pagination
 from ..aws.services import (
     extract_pagination_config,
-    update_parameters_with_max_results,
 )
 from ..common.command import IRCommand
 from ..common.config import OPT_IN_TELEMETRY, READ_OPERATIONS_ONLY_MODE
@@ -47,7 +46,6 @@ def interpret(
     region: str,
     client_side_filter: ParsedResult | None = None,
     max_results: int | None = None,
-    max_tokens: int | None = None,
     is_counting: bool | None = None,
 ) -> dict[str, Any]:
     """Interpret the given intermediate representation into boto3 calls.
@@ -57,12 +55,9 @@ def interpret(
     """
     logger.info("Interpreting IR in '{}' region", region)
 
-    config_result = extract_pagination_config(
-        ir.parameters, ir.service_name, ir.operation_name, max_results
-    )
+    config_result = extract_pagination_config(ir.parameters, max_results)
     parameters = config_result.parameters
     pagination_config = config_result.pagination_config
-    max_results = pagination_config.get('MaxItems')
 
     with operation_timer(ir.service_name, ir.operation_python_name):
         config = Config(
@@ -89,7 +84,6 @@ def interpret(
                 operation_name=ir.operation_name,
                 operation_parameters=ir.parameters,
                 pagination_config=pagination_config,
-                max_tokens=max_tokens,
                 client_side_filter=client_side_filter,
             )
 
@@ -117,13 +111,6 @@ def interpret(
                     response['resource_count_info'] = resource_count_info
         else:
             operation = getattr(client, ir.operation_python_name)
-            # Inject max results into the call if the call permits it
-            parameters = update_parameters_with_max_results(
-                ir.parameters,
-                ir.service_name,
-                ir.operation_name,
-                max_results,
-            )
             response = operation(**parameters)
 
             if client_side_filter is not None:

@@ -45,7 +45,6 @@ Add the following code to your MCP client configuration (e.g., for Amazon Q Deve
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
         "AWS_PROFILE": "profile", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
-        "MAX_OUTPUT_TOKENS": "50000", // Optional. Limits the output of the AWS CLI command to the set amount of tokens.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false"
       },
@@ -81,7 +80,6 @@ We primarily use credentials to control which commands this MCP server can execu
 
 #### Optional
 - `AWS_PROFILE` (string, default: "default"): AWS Profile for credentials to use for command executions, 'default' will be used if not specified
-- `MAX_OUTPUT_TOKENS` (int): Limits the output of the AWS CLI command to the set amount of tokens, default sets this to unlimited. The size of data that LLMs can reason about is limited and this can become a problem when you have a large number of AWS resources in your account and you are asking questions about these resources. The tool makes a best effort estimation since tokenization is different for every LLM and will stop paginating the AWS CLI command once it estimates that the specified token limit has been reached.
 - `READ_OPERATIONS_ONLY` (boolean, default: false): Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [ReadOnlyAccess](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/ReadOnlyAccess.html) policy.
 - `AWS_MCP_TELEMETRY` (boolean, default: false): Allow sending additional telemetry data to AWS related to the server configuration.
 

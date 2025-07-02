@@ -117,7 +117,6 @@ def interpret_command(
     credentials: Credentials,
     default_region: str,
     max_results: int | None = None,
-    is_counting: bool | None = None,
 ) -> ProgramInterpretationResponse:
     """Interpret the given CLI command and return an interpretation response."""
     interpreted_program = _interpret_command(
@@ -127,7 +126,6 @@ def interpret_command(
         session_token=credentials.session_token,
         default_region=default_region,
         max_results=max_results,
-        is_counting=is_counting,
     )
 
     validation_failures = (

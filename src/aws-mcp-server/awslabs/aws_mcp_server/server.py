@@ -138,7 +138,6 @@ async def suggest_aws_commands(
     - For cross-region or account-wide operations, explicitly include --region parameter
     - All commands are validated before execution to prevent errors
     - Supports pagination control via max_results parameter
-    - Can handle resource counting operations via is_counting parameter
 
     Best practices for command generation:
     — Always use the most specific service and operation names
@@ -170,12 +169,6 @@ async def call_aws(
     max_results: Annotated[
         int | None,
         Field(description='Optional limit for number of results (useful for pagination)'),
-    ] = None,
-    is_counting: Annotated[
-        bool | None,
-        Field(
-            description='Optional flag to enable resource counting operations. MUST use this for answering any questions related to counting (e.g. "How many xxx", "Count my xxx", "Number of xxx", etc.)'
-        ),
     ] = None,
 ) -> ProgramInterpretationResponse | AwsMcpServerErrorResponse | AwsCliAliasResponse:
     """Call AWS with the given CLI command and return the result as a dictionary."""
@@ -231,7 +224,6 @@ async def call_aws(
             credentials=creds,
             default_region=cast(str, DEFAULT_REGION),
             max_results=max_results,
-            is_counting=is_counting,
         )
     except NoCredentialsError:
         error_message = (

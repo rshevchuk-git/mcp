@@ -14,9 +14,7 @@
 
 import boto3
 import importlib.metadata
-import time
 from ..aws.pagination import build_result
-from ..aws.resource_counting import count_resources_via_pagination
 from ..aws.services import (
     extract_pagination_config,
 )
@@ -46,7 +44,6 @@ def interpret(
     region: str,
     client_side_filter: ParsedResult | None = None,
     max_results: int | None = None,
-    is_counting: bool | None = None,
 ) -> dict[str, Any]:
     """Interpret the given intermediate representation into boto3 calls.
 
@@ -76,7 +73,6 @@ def interpret(
             config=config,
         )
 
-        start_time = time.time()
         if client.can_paginate(ir.operation_python_name):
             response = build_result(
                 paginator=client.get_paginator(ir.operation_python_name),
@@ -86,29 +82,6 @@ def interpret(
                 pagination_config=pagination_config,
                 client_side_filter=client_side_filter,
             )
-
-            if is_counting:
-                logger.info('This is a counting request, adding resource count info')
-
-                operation_time = time.time() - start_time
-                count_result = count_resources_via_pagination(
-                    client,
-                    response,
-                    operation_time,
-                    ir.service_name,
-                    ir.operation_name,
-                    ir.operation_python_name,
-                    parameters,
-                )
-
-                if count_result is not None:
-                    total_resource_count, count_status = count_result
-                    resource_count_info = {
-                        'resource_count': total_resource_count,
-                        'status': count_status,
-                    }
-
-                    response['resource_count_info'] = resource_count_info
         else:
             operation = getattr(client, ir.operation_python_name)
             response = operation(**parameters)

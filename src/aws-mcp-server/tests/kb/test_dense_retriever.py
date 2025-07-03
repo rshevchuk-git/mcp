@@ -6,6 +6,35 @@ from awslabs.aws_mcp_server.core.kb.dense_retriever import (
     DEFAULT_TOP_K,
     DenseRetriever,
 )
+from pathlib import Path
+from sentence_transformers import SentenceTransformer
+
+
+def test_simple_initialization():
+    """Tests if DenseRetriver is instantiated properly."""
+    # Check if embeddings file exists
+    cache_file = DEFAULT_CACHE_DIR / f'{DEFAULT_EMBEDDINGS_MODEL.replace("/", "-")}.npz'
+    if not cache_file.exists():
+        pytest.skip(f'Embeddings file not found: {cache_file}')
+    rag = DenseRetriever(cache_dir=Path(DEFAULT_CACHE_DIR))
+
+    assert rag.top_k == DEFAULT_TOP_K
+    assert rag.cache_dir == Path(DEFAULT_CACHE_DIR)
+    assert rag.cache_file is not None
+    assert rag.model_name == DEFAULT_EMBEDDINGS_MODEL
+    assert isinstance(rag.model, SentenceTransformer)
+    assert rag._model is not None
+    assert rag._index is None
+    assert rag._documents is None
+    assert rag._embeddings is None
+
+    try:
+        rag.load_from_cache()
+    except ValueError:
+        assert False, 'Cached file is provided but not found.'
+
+    assert rag._documents is not None
+    assert rag._embeddings is not None
 
 
 def test_dense_retriever():
@@ -19,7 +48,7 @@ def test_dense_retriever():
     assert isinstance(knowledge_base.rag, DenseRetriever)
 
     suggestions = knowledge_base.get_suggestions('Describe my ec2 instances')
-    suggested_commnads = [s['command'] for s in suggestions['suggestions']]
+    suggested_commands = [s['command'] for s in suggestions['suggestions']]
 
-    assert len(suggested_commnads) == DEFAULT_TOP_K
-    assert 'aws ec2 describe-instances' in suggested_commnads
+    assert len(suggested_commands) == DEFAULT_TOP_K
+    assert 'aws ec2 describe-instances' in suggested_commands

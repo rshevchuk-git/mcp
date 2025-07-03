@@ -1,13 +1,16 @@
+import os
+import pytest
 from awslabs.aws_mcp_server.core.common.errors import AwsMcpError
 from awslabs.aws_mcp_server.core.common.models import (
+    AwsCliAliasResponse,
     AwsMcpServerErrorResponse,
     InterpretationResponse,
     ProgramInterpretationResponse,
 )
-from awslabs.aws_mcp_server.server import call_aws
+from awslabs.aws_mcp_server.server import call_aws, main, suggest_aws_commands
 from botocore.exceptions import NoCredentialsError
 from tests.fixtures import TEST_CREDENTIALS, DummyCtx
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', 'us-east-1')
@@ -65,6 +68,53 @@ async def test_call_aws_success(
     mock_validate.assert_called_once_with(mock_ir)
     mock_get_creds.assert_called_once()
     mock_interpret.assert_called_once()
+
+
+@patch('awslabs.aws_mcp_server.server.knowledge_base')
+async def test_suggest_aws_commands_success(mock_knowledge_base):
+    """Test suggest_aws_commands returns suggestions for a valid query."""
+    mock_suggestions = {
+        'suggestions': [
+            {
+                'command': 'aws s3 ls',
+                'confidence': 0.95,
+                'description': 'List S3 buckets',
+                'required_parameters': [],
+            },
+            {
+                'command': 'aws s3api list-buckets',
+                'confidence': 0.90,
+                'description': 'List all S3 buckets using S3 API',
+                'required_parameters': [],
+            },
+        ]
+    }
+    mock_knowledge_base.get_suggestions.return_value = mock_suggestions
+
+    result = await suggest_aws_commands('List all S3 buckets', DummyCtx())
+
+    assert result == mock_suggestions
+    mock_knowledge_base.get_suggestions.assert_called_once_with('List all S3 buckets')
+
+
+async def test_suggest_aws_commands_empty_query():
+    """Test suggest_aws_commands returns error for empty query."""
+    result = await suggest_aws_commands('', DummyCtx())
+
+    assert result == AwsMcpServerErrorResponse(detail='Empty query provided')
+
+
+@patch('awslabs.aws_mcp_server.server.knowledge_base')
+async def test_suggest_aws_commands_exception(mock_knowledge_base):
+    """Test suggest_aws_commands returns error when knowledge base raises exception."""
+    mock_knowledge_base.get_suggestions.side_effect = RuntimeError('Knowledge base error')
+
+    result = await suggest_aws_commands('List S3 buckets', DummyCtx())
+
+    assert result == AwsMcpServerErrorResponse(
+        detail='Error while suggesting commands: Knowledge base error'
+    )
+    mock_knowledge_base.get_suggestions.assert_called_once_with('List S3 buckets')
 
 
 @patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', 'us-east-1')
@@ -439,3 +489,113 @@ async def test_call_aws_both_validation_failures_and_constraints(
     )
     mock_translate_cli_to_ir.assert_called_once_with('aws s3api list-buckets')
     mock_validate.assert_called_once_with(mock_ir)
+
+
+@patch('awslabs.aws_mcp_server.server.execute_awscli_customization')
+@patch('awslabs.aws_mcp_server.server.get_local_credentials')
+@patch('awslabs.aws_mcp_server.server.validate')
+@patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
+@patch('awslabs.aws_mcp_server.server.is_operation_read_only')
+async def test_call_aws_awscli_customization_success(
+    mock_is_operation_read_only,
+    mock_translate_cli_to_ir,
+    mock_validate,
+    mock_get_creds,
+    mock_execute_awscli_customization,
+):
+    """Test call_aws returns success response for AWS CLI customization command."""
+    mock_ir = MagicMock()
+    mock_ir.command = MagicMock()
+    mock_ir.command.is_awscli_customization = True
+    mock_translate_cli_to_ir.return_value = mock_ir
+
+    mock_is_operation_read_only.return_value = True
+    mock_get_creds.return_value = TEST_CREDENTIALS
+
+    mock_response = MagicMock()
+    mock_response.validation_failed = False
+    mock_validate.return_value = mock_response
+
+    expected_response = AwsCliAliasResponse(response='Command executed successfully', error=None)
+    mock_execute_awscli_customization.return_value = expected_response
+
+    result = await call_aws('aws configure list', DummyCtx())
+
+    assert result == expected_response
+    mock_translate_cli_to_ir.assert_called_once_with('aws configure list')
+    mock_validate.assert_called_once_with(mock_ir)
+    mock_execute_awscli_customization.assert_called_once_with('aws configure list')
+    mock_get_creds.assert_called_once()
+
+
+@patch('awslabs.aws_mcp_server.server.execute_awscli_customization')
+@patch('awslabs.aws_mcp_server.server.get_local_credentials')
+@patch('awslabs.aws_mcp_server.server.validate')
+@patch('awslabs.aws_mcp_server.server.translate_cli_to_ir')
+@patch('awslabs.aws_mcp_server.server.is_operation_read_only')
+async def test_call_aws_awscli_customization_error(
+    mock_is_operation_read_only,
+    mock_translate_cli_to_ir,
+    mock_validate,
+    mock_get_creds,
+    mock_execute_awscli_customization,
+):
+    """Test call_aws handles error response from AWS CLI customization command."""
+    mock_ir = MagicMock()
+    mock_ir.command = MagicMock()
+    mock_ir.command.is_awscli_customization = True
+    mock_translate_cli_to_ir.return_value = mock_ir
+
+    mock_is_operation_read_only.return_value = True
+    mock_get_creds.return_value = TEST_CREDENTIALS
+
+    mock_response = MagicMock()
+    mock_response.validation_failed = False
+    mock_validate.return_value = mock_response
+
+    error_response = AwsMcpServerErrorResponse(
+        detail="Error while executing 'aws configure list': Configuration file not found"
+    )
+    mock_execute_awscli_customization.return_value = error_response
+
+    mock_ctx = MagicMock()
+    mock_ctx.error = AsyncMock()
+
+    result = await call_aws('aws configure list', mock_ctx)
+
+    assert result == error_response
+    mock_translate_cli_to_ir.assert_called_once_with('aws configure list')
+    mock_validate.assert_called_once_with(mock_ir)
+    mock_execute_awscli_customization.assert_called_once_with('aws configure list')
+    mock_ctx.error.assert_called_once_with(error_response.detail)
+    mock_get_creds.assert_called_once()
+
+
+@patch.dict(os.environ, {}, clear=True)
+def test_main_missing_aws_region():
+    """Test main function raises ValueError when AWS_REGION environment variable is not set."""
+    with pytest.raises(ValueError, match='AWS_REGION environment variable is not defined.'):
+        main()
+
+
+@patch('awslabs.aws_mcp_server.server.server')
+@patch('awslabs.aws_mcp_server.server.get_read_only_operations')
+@patch('awslabs.aws_mcp_server.server.knowledge_base')
+@patch('awslabs.aws_mcp_server.server.READ_OPERATIONS_ONLY_MODE', True)
+@patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', 'us-east-1')
+def test_main_success_with_read_only_mode(
+    mock_knowledge_base,
+    mock_get_read_only_operations,
+    mock_server,
+):
+    """Test main function executes successfully with read-only mode enabled."""
+    mock_knowledge_base.setup = MagicMock()
+    mock_read_operations = MagicMock()
+    mock_get_read_only_operations.return_value = mock_read_operations
+    mock_server.run = MagicMock()
+
+    main()
+
+    mock_knowledge_base.setup.assert_called_once()
+    mock_get_read_only_operations.assert_called_once()
+    mock_server.run.assert_called_once_with(transport='stdio')

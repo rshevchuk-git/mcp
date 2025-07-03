@@ -23,7 +23,6 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from ..core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from awscli.clidriver import __version__ as awscli_version
 from pathlib import Path
 from typing import Optional
@@ -206,6 +205,7 @@ def check_embeddings_file(extracted_dir: Path) -> Optional[Path]:
         return None
 
     # Look for embeddings file with the correct awscli version
+    KNOWLEDGE_BASE_SUFFIX = 'knowledge-base-awscli'
     expected_pattern = f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
     matching_files = list(embeddings_dir.glob(expected_pattern))
 
@@ -250,6 +250,7 @@ def check_local_embeddings() -> bool:
         return False
 
     # Look for embeddings file with the correct awscli version
+    KNOWLEDGE_BASE_SUFFIX = 'knowledge-base-awscli'
     expected_pattern = f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
     matching_files = list(embeddings_dir.glob(expected_pattern))
 

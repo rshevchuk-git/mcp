@@ -4,12 +4,6 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-    inputs:
-      since:
-        default: ''
-        description: 'changes since'
-        required: false
-        type: string
 
 permissions: {}
 
@@ -20,7 +14,6 @@ jobs:
       contents: read
     outputs:
       packages: ${{ steps.find-packages.outputs.packages }}
-      aws-mcp-changed: ${{ steps.aws-mcp-changed.outputs.aws-mcp-changed }}
       changed-directories: ${{ steps.find-changed-directories.outputs.changed-directories }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -32,18 +25,14 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           EVENT_BEFORE: ${{ github.event.before }}
           BASE_REF: ${{ github.base_ref }}
-          INPUT_SINCE: ${{ inputs.since }}
         run: |
           # Push         against last commit
           # Pull Request against target branch sha
-          # Workflow     against input
           # Otherwise    against latest release
           if [ "$EVENT_NAME" == "push" ]; then
             SINCE="$EVENT_BEFORE";
           elif [ "$EVENT_NAME" == "pull_request" ]; then
             SINCE="$BASE_REF";
-          elif [ "$EVENT_NAME" == "workflow_dispatch" ]; then
-            SINCE="$INPUT_SINCE"
           else
             SINCE="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName | jq -r '.[].tagName')"
           fi;
@@ -54,44 +43,6 @@ jobs:
           echo "$CHANGEDDIRECTORIES"
           echo "changed-directories=$CHANGEDDIRECTORIES" >> $GITHUB_OUTPUT
 
-      - name: Should rebuild AWS MCP embeddings
-        id: aws-mcp-changed
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_REF: ${{ github.base_ref }}
-          EVENT_BEFORE: ${{ github.event.before }}
-          SHA: ${{ github.sha }}
-        run: |
-          if [ "$EVENT_NAME" == "pull_request" ]; then
-            echo "Base branch: $BASE_REF"
-            echo "=== CHANGED FILES (PR) ==="
-            git diff --name-only "origin/$BASE_REF"...HEAD
-            echo "=== FILES MATCHING PATTERN (PR) ==="
-            git diff --name-only "origin/$BASE_REF"...HEAD | grep "^src/aws-mcp-server/" || echo "No matches found"
-
-            if git diff --name-only "origin/$BASE_REF"...HEAD | grep -q "^src/aws-mcp-server/"; then
-              echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-              echo "PR changes detected - setting aws-mcp-changed=true"
-            else
-              echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-              echo "No PR changes - setting aws-mcp-changed=false"
-            fi
-          else
-            echo "Before SHA: $EVENT_BEFORE"
-            echo "After SHA: $SHA"
-            echo "=== CHANGED FILES (PUSH) ==="
-            git diff --name-only "$EVENT_BEFORE" "$SHA"
-            echo "=== FILES MATCHING PATTERN (PUSH) ==="
-            git diff --name-only "$EVENT_BEFORE" "$SHA" | grep "^src/aws-mcp-server/" || echo "No matches found"
-
-            if git diff --name-only "$EVENT_BEFORE" "$SHA" | grep -q "^src/aws-mcp-server/"; then
-              echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-              echo "Push changes detected - setting aws-mcp-changed=true"
-            else
-              echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-              echo "No push changes - setting aws-mcp-changed=false"
-            fi
-          fi
       - name: Find Python packages
         id: find-packages
         working-directory: src

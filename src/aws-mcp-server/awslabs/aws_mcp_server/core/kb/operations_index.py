@@ -91,7 +91,7 @@ def _extract_keywords(text: str) -> set[str]:
     return {word for word in words if word and len(word) > 1 and word not in skip_words}
 
 
-def _calculate_similarity(query: str, operation_description: str) -> float:
+def calculate_similarity(query: str, operation_description: str) -> float:
     """Calculate similarity between query and operation description."""
     if not operation_description:
         return 0.0
@@ -189,7 +189,7 @@ class KeyWordSearch:
         """Get suggestions for AWS operations based on the query."""
         scored_operations = []
         for operation in self.aws_operations_index:
-            score = _calculate_similarity(
+            score = calculate_similarity(
                 query,
                 f'{operation["service"]} {operation["operation"]} {operation["full_description"]}',
             )

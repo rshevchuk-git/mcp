@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import sys
 from .core.aws.driver import translate_cli_to_ir
 from .core.aws.service import (
@@ -251,7 +250,7 @@ def main():
     """Main entry point for the AWS MCP server."""
     global READ_OPERATIONS_INDEX
 
-    if os.getenv('AWS_REGION') is None:
+    if DEFAULT_REGION is None:
         sys.stderr.write('[AWSMCP Error]: AWS_REGION environment variable is not defined.')
         raise ValueError('AWS_REGION environment variable is not defined.')
 

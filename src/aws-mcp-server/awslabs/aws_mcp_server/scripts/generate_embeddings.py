@@ -15,8 +15,8 @@
 import argparse
 import re
 import time
-from ..aws.services import driver
-from .dense_retriever import (
+from ..core.aws.services import driver
+from ..core.kb.dense_retriever import (
     DEFAULT_CACHE_DIR,
     DEFAULT_EMBEDDINGS_MODEL,
     KNOWLEDGE_BASE_SUFFIX,

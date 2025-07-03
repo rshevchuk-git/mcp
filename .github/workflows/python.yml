@@ -61,10 +61,10 @@ jobs:
 
             if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "^src/aws-mcp-server/"; then
               echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-              echo "✅ PR changes detected - setting aws-mcp-changed=true"
+              echo "PR changes detected - setting aws-mcp-changed=true"
             else
               echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-              echo "❌ No PR changes - setting aws-mcp-changed=false"
+              echo "No PR changes - setting aws-mcp-changed=false"
             fi
           else
             echo "Before SHA: ${{ github.event.before }}"
@@ -76,10 +76,10 @@ jobs:
 
             if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q "^src/aws-mcp-server/"; then
               echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-              echo "✅ Push changes detected - setting aws-mcp-changed=true"
+              echo "Push changes detected - setting aws-mcp-changed=true"
             else
               echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-              echo "❌ No push changes - setting aws-mcp-changed=false"
+              echo "No push changes - setting aws-mcp-changed=false"
             fi
           fi
       - name: Find Python packages
@@ -190,8 +190,7 @@ jobs:
         if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
         working-directory: src/${{ matrix.package }}
         run: |
-          # First try to download existing embeddings from artifacts
-          if uv run --frozen check-and-download-embeddings; then
+          if uv run --frozen download-latest-embeddings; then
             echo "Successfully downloaded existing embeddings"
           else
             echo "No matching embeddings found, generating new ones..."

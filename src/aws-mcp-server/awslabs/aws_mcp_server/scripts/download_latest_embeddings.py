@@ -23,7 +23,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from .dense_retriever import KNOWLEDGE_BASE_SUFFIX
+from ..core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from awscli.clidriver import __version__ as awscli_version
 from pathlib import Path
 from typing import Optional

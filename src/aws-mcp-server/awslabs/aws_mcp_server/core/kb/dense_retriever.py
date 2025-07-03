@@ -77,7 +77,7 @@ class DenseRetriever:
         if self._documents is None:
             try:
                 self.load_from_cache_with_version()
-            except (FileNotFoundError, ImportError):
+            except FileNotFoundError:
                 raise FileNotFoundError('No embeddings found for current awscli version')
         return self._documents
 
@@ -87,7 +87,7 @@ class DenseRetriever:
         if self._embeddings is None:
             try:
                 self.load_from_cache_with_version()
-            except (FileNotFoundError, ImportError):
+            except FileNotFoundError:
                 raise FileNotFoundError('No embeddings found for current awscli version')
         return self._embeddings
 

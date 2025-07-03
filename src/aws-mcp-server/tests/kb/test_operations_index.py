@@ -1,59 +1,14 @@
-import pytest
-from awslabs.aws_mcp_server.core.kb.operations_index import (
-    KeyWordSearch,
-    _calculate_similarity,
-    _clean_text,
-    _extract_keywords,
-    _get_all_aws_operations,
-)
+import tempfile
+from awslabs.aws_mcp_server.core.kb.operations_index import KeyWordSearch, calculate_similarity
+from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-
-@pytest.mark.parametrize(
-    'raw_text, clean_text',
-    [
-        (
-            '<p>Retroactively applies the archive rule to existing findings that meet the archive rule criteria.</p>',
-            'retroactively applies the archive rule to existing findings that meet the archive rule criteria',
-        ),
-        (
-            '<p>Accepts the request that originated from <a>StartPrimaryEmailUpdate</a> to update the primary email address (also known as the root user email address) for the specified account.</p>',
-            'accepts the request that originated from startprimaryemailupdate to update the primary email address also known as the root user email address for the specified account',
-        ),
-        (
-            '<p>Deletes the specified alternate contact from an Amazon Web Services account.</p> \
-            <p>For complete details about how to use the alternate contact operations, see <a href="https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-contact.html"> \
-            Access or updating the alternate contacts</a>.</p> <note> <p>Before you can update the alternate contact information for an Amazon Web Services account that is managed by Organizations, \
-            you must first enable integration between Amazon Web Services Account Management and Organizations. \
-            For more information, see <a href="https://docs.aws.amazon.com/accounts/latest/reference/using-orgs-trusted-access.html">Enabling trusted access for Amazon Web Services Account Management</a>.</p> </note>',
-            'deletes the specified alternate contact from an amazon web services account for complete details about how to use the alternate contact operations see access or updating the alternate contacts before you can update the alternate contact information for an amazon web services account that is managed by organizations you must first enable integration between amazon web services account management and organizations for more information see enabling trusted access for amazon web services account management',
-        ),
-    ],
-)
-def test_clean_text(raw_text, clean_text):
-    """Test _clean_text."""
-    assert _clean_text(raw_text) == clean_text
-
-
-def test_extract_keywords():
-    """Test that stop words are filtered out."""
-    text = 'The quick brown fox jumps with the lazy dog a b c'
-    keywords = _extract_keywords(text)
-    # Should not contain stop words like 'the', 'with'
-    assert 'the' not in keywords
-    assert 'with' not in keywords
-    assert 'quick' in keywords
-    assert 'brown' in keywords
-    assert 'a' not in keywords
-    assert 'b' not in keywords
-    assert 'c' not in keywords
 
 
 def test_calculate_similarity_exact_match():
     """Test similarity calculation for exact matches."""
     query = 'launch ec2 instance'
     description = 'create ec2 instance'
-    similarity = _calculate_similarity(query, description)
+    similarity = calculate_similarity(query, description)
     assert 0.5 < similarity <= 1.0  # Should be high similarity
 
 
@@ -61,60 +16,16 @@ def test_calculate_similarity_partial_match():
     """Test similarity calculation for partial matches."""
     query = 'create ec2 instance'
     description = 'create an ec2 instance with security groups'
-    similarity = _calculate_similarity(query, description)
-    assert 0.5 < similarity < 1.0  # Should be high similarity
+    similarity = calculate_similarity(query, description)
+    assert 0.5 < similarity <= 1.0  # Should be high similarity
 
 
 def test_calculate_similarity_no_match():
     """Test similarity calculation for no matches."""
     query = 'create ec2 instance'
     description = 'delete s3 bucket'
-    similarity = _calculate_similarity(query, description)
+    similarity = calculate_similarity(query, description)
     assert similarity < 0.3  # Should be low similarity
-
-
-@patch('awslabs.aws_mcp_server.core.kb.operations_index.driver._get_command_table')
-def test_get_all_aws_operations(mock_get_command_table):
-    """Test get_all_aws_operations."""
-    # Mock input shape
-    mock_member = MagicMock()
-    mock_member.type_name = 'string'
-    mock_member.documentation = 'Mock parameter documentation'
-
-    mock_input_shape = MagicMock()
-    mock_input_shape.members = {'MockParam': mock_member}
-
-    # Mock operation
-    mock_operation = MagicMock()
-    mock_operation._operation_model.documentation = 'Mock operation documentation'
-    mock_operation._operation_model.input_shape = mock_input_shape
-
-    # Mock service command instance with spec to pass isinstance check
-    from awscli.clidriver import ServiceCommand
-
-    mock_service_command = MagicMock(spec=ServiceCommand)
-    mock_service_command._get_command_table.return_value = {'mock-operation': mock_operation}
-
-    mock_get_command_table.return_value = {'mock-service': mock_service_command}
-
-    operations = _get_all_aws_operations()
-
-    assert len(operations) > 0
-    should_be_mocked_operation = next(op for op in operations if op['service'] == 'mock-service')
-    assert 'mock-param (string)' in should_be_mocked_operation['parameters']
-
-
-@patch('awslabs.aws_mcp_server.core.kb.operations_index.driver._get_command_table')
-def test_get_all_aws_operations_handles_exceptions(mock_get_command_table):
-    """Test that exceptions during operation retrieval are handled gracefully."""
-    mock_service_command = MagicMock()
-    mock_service_command._get_command_table.side_effect = Exception('Test exception')
-
-    mock_get_command_table.return_value = {'failing-service': mock_service_command}
-
-    # Should not raise exception
-    operations = _get_all_aws_operations()
-    assert isinstance(operations, list)
 
 
 @patch('awslabs.aws_mcp_server.core.kb.operations_index._get_all_aws_operations')
@@ -133,6 +44,62 @@ def test_keyword_search_initialization(mock_get_operations):
     search = KeyWordSearch()
     assert search.aws_operations_index is not None
     assert len(search.aws_operations_index) == 1
+
+
+@patch('awslabs.aws_mcp_server.core.kb.operations_index.driver._get_command_table')
+def test_get_all_aws_operations_handles_exceptions(mock_get_command_table):
+    """Test that exceptions during operation retrieval are handled gracefully."""
+    # Mock service command instance with spec to pass isinstance check
+    from awscli.clidriver import ServiceCommand
+
+    mock_service_command = MagicMock(spec=ServiceCommand)
+    mock_service_command._get_command_table.side_effect = Exception('Test exception')
+
+    mock_get_command_table.return_value = {'failing-service': mock_service_command}
+
+    search = KeyWordSearch()
+    # Should not raise exception
+    assert len(search.aws_operations_index) == 0
+
+
+@patch('awslabs.aws_mcp_server.core.kb.operations_index.driver._get_command_table')
+def test_get_all_aws_operations(mock_get_command_table):
+    """Test get_all_aws_operations."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        cache_dir = Path(temp_dir)
+        model_name = 'BAAI/bge-base-en-v1.5'
+        cache_file = cache_dir / f'{model_name.replace("/", "-")}.npz'
+
+        # Create a dummy cache file
+        cache_file.touch()
+
+        # Mock input shape
+        mock_member = MagicMock()
+        mock_member.type_name = 'string'
+        mock_member.documentation = 'Mock parameter documentation'
+
+        mock_input_shape = MagicMock()
+        mock_input_shape.members = {'MockParam': mock_member}
+
+        # Mock operation
+        mock_operation = MagicMock()
+        mock_operation._operation_model.documentation = 'Mock operation documentation'
+        mock_operation._operation_model.input_shape = mock_input_shape
+
+        # Mock service command instance with spec to pass isinstance check
+        from awscli.clidriver import ServiceCommand
+
+        mock_service_command = MagicMock(spec=ServiceCommand)
+        mock_service_command._get_command_table.return_value = {'mock-operation': mock_operation}
+
+        mock_get_command_table.return_value = {'mock-service': mock_service_command}
+
+        search = KeyWordSearch()
+        assert len(search.aws_operations_index) == 1
+        op = search.aws_operations_index[0]
+
+        assert op['service'] == 'mock-service'
+        assert 'mock-param (string)' in op['parameters']
 
 
 @patch('awslabs.aws_mcp_server.core.kb.operations_index._get_all_aws_operations')

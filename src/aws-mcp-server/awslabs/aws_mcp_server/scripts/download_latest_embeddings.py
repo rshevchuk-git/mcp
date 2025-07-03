@@ -23,8 +23,8 @@ import sys
 import tarfile
 import tempfile
 import zipfile
-from ..core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from awscli.clidriver import __version__ as awscli_version
+from awslabs.aws_mcp_server.core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from pathlib import Path
 from typing import Optional
 
@@ -245,7 +245,7 @@ def cleanup(temp_dir: Optional[Path] = None):
 
 def check_local_embeddings() -> bool:
     """Check if embeddings file already exists locally."""
-    embeddings_dir = Path('awslabs/aws_mcp_server/core/data/embeddings')
+    embeddings_dir = Path(__file__).resolve().parent.parent / 'core' / 'data' / 'embeddings'
     if not embeddings_dir.exists():
         return False
 
@@ -271,46 +271,52 @@ def check_gh_cli() -> bool:
         return False
 
 
-def main():
+def try_download_latest_embeddings() -> bool:
     """Check if embeddings artifact exists and download latest if it doesn't."""
     print(f'Checking for existing embeddings. Current awscli version: {awscli_version}')
 
     # Check if embeddings already exist locally
     if check_local_embeddings():
         print('Embeddings already exist locally')
-        sys.exit(0)
+        return True
 
     # Check if GitHub CLI is available
     if not check_gh_cli():
         print('GitHub CLI not available, will generate embeddings')
-        sys.exit(1)
+        return False
 
     # Get latest artifact
     artifact = get_latest_artifact()
     if not artifact:
         print('No artifact found, will generate embeddings')
-        sys.exit(1)
+        return False
 
     # Download and extract artifact
     downloaded, extracted_dir = download_artifact(artifact)
     if not downloaded or not extracted_dir:
         print('Failed to download artifact, will generate embeddings')
-        sys.exit(1)
+        return False
 
     # Check for embeddings file
     embeddings_file = check_embeddings_file(extracted_dir)
     if not embeddings_file:
         print('No matching embeddings file found, will generate embeddings')
         cleanup(extracted_dir.parent)  # Clean up the temp directory
-        sys.exit(1)
+        return False
 
     # Copy embeddings file to current directory
-    target_dir = Path('awslabs/aws_mcp_server/core/data/embeddings')
+    target_dir = Path(__file__).resolve().parent.parent / 'core' / 'data' / 'embeddings'
     if copy_embeddings_file(embeddings_file, target_dir):
         print('Successfully copied embeddings file')
         cleanup(extracted_dir.parent)  # Clean up the temp directory
-        sys.exit(0)
+        return True
     else:
         print('Failed to copy embeddings file, will generate embeddings')
         cleanup(extracted_dir.parent)  # Clean up the temp directory
-        sys.exit(1)
+        return False
+
+
+def main():
+    """Main entry point for the script."""
+    success = try_download_latest_embeddings()
+    sys.exit(0 if success else 1)

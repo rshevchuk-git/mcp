@@ -3,12 +3,16 @@ import pytest
 from ..history_handler import history
 from awslabs.aws_mcp_server.core.aws.driver import translate_cli_to_ir
 from awslabs.aws_mcp_server.core.aws.service import (
+    execute_awscli_customization,
+    get_local_credentials,
     interpret_command,
     is_operation_read_only,
     validate,
 )
 from awslabs.aws_mcp_server.core.common.helpers import as_json
 from awslabs.aws_mcp_server.core.common.models import (
+    AwsCliAliasResponse,
+    AwsMcpServerErrorResponse,
     CommandMetadata,
     Context,
     Credentials,
@@ -20,6 +24,7 @@ from awslabs.aws_mcp_server.core.common.models import (
 )
 from awslabs.aws_mcp_server.core.metadata.read_only_operations_list import ReadOnlyOperations
 from botocore.config import Config
+from botocore.exceptions import NoCredentialsError
 from tests.fixtures import (
     CLOUD9_DESCRIBE_ENVIRONMENTS,
     CLOUD9_LIST_ENVIRONMENTS,
@@ -35,7 +40,7 @@ from tests.fixtures import (
     patch_boto3,
 )
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 
 @pytest.mark.parametrize(
@@ -466,3 +471,75 @@ def test_is_operation_read_only_raises_error_for_missing_operation_name():
 
     with pytest.raises(RuntimeError, match='failed to check if operation is allowed'):
         is_operation_read_only(ir, read_only_operations)
+
+
+@patch('awslabs.aws_mcp_server.core.aws.service.boto3.Session')
+def test_get_local_credentials_success(mock_session_class):
+    """Test get_local_credentials returns credentials when available."""
+    mock_session = MagicMock()
+    mock_session_class.return_value = mock_session
+
+    mock_credentials = MagicMock()
+    mock_credentials.access_key = 'test-access-key'
+    mock_credentials.secret_key = 'test-secret-key'  # pragma: allowlist secret
+    mock_credentials.token = 'test-session-token'
+
+    mock_session.get_credentials.return_value = mock_credentials
+
+    result = get_local_credentials()
+
+    assert isinstance(result, Credentials)
+    assert result.access_key_id == 'test-access-key'
+    assert result.secret_access_key == 'test-secret-key'  # pragma: allowlist secret
+    assert result.session_token == 'test-session-token'
+    mock_session_class.assert_called_once()
+    mock_session.get_credentials.assert_called_once()
+
+
+@patch('awslabs.aws_mcp_server.core.aws.service.boto3.Session')
+def test_get_local_credentials_raises_no_credentials_error(mock_session_class):
+    """Test get_local_credentials raises NoCredentialsError when credentials are None."""
+    mock_session = MagicMock()
+    mock_session_class.return_value = mock_session
+    mock_session.get_credentials.return_value = None
+
+    with pytest.raises(NoCredentialsError):
+        get_local_credentials()
+
+    mock_session_class.assert_called_once()
+    mock_session.get_credentials.assert_called_once()
+
+
+@patch('awslabs.aws_mcp_server.core.aws.service.driver')
+def test_execute_awscli_customization_success(mock_driver):
+    """Test execute_awscli_customization returns AwsCliAliasResponse on successful execution."""
+    mock_driver.main.return_value = None
+
+    with patch('awslabs.aws_mcp_server.core.aws.service.StringIO') as mock_stringio:
+        mock_stdout = MagicMock()
+        mock_stderr = MagicMock()
+        mock_stdout.getvalue.return_value = 'bucket1\nbucket2\n'
+        mock_stderr.getvalue.return_value = ''
+        mock_stringio.side_effect = [mock_stdout, mock_stderr]
+
+        result = execute_awscli_customization('aws s3 ls')
+
+        assert isinstance(result, AwsCliAliasResponse)
+        assert result.response == 'bucket1\nbucket2\n'
+        assert result.error == ''
+
+        mock_driver.main.assert_called_once_with(['s3', 'ls'])
+
+
+@patch('awslabs.aws_mcp_server.core.aws.service.driver')
+def test_execute_awscli_customization_error(mock_driver):
+    """Test execute_awscli_customization returns AwsMcpServerErrorResponse on exception."""
+    mock_driver.main.side_effect = Exception('Invalid command')
+
+    result = execute_awscli_customization('aws invalid command')
+
+    assert isinstance(result, AwsMcpServerErrorResponse)
+    assert result.error is True
+    assert result.detail == "Error while executing 'aws invalid command': Invalid command"
+
+    mock_driver.main.assert_called_once_with(['invalid', 'command'])

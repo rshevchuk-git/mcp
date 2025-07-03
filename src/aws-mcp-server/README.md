@@ -43,11 +43,9 @@ Remember to remove all comments when you finish configuration, otherwise the con
       "command": "uvx",
       "args": [
         "awslabs.aws-mcp-server@latest"
-        "awslabs.aws-mcp-server@latest"
       ],
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-        "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false"
@@ -104,7 +102,6 @@ To make changes to this MCP locally and run it:
 
 3. Configure AWS credentials and environment variables:
    - Ensure you have AWS credentials configured in `~/.aws/credentials` or set the appropriate [environment variables](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#environment-variables) in the MCP server configuration.
-   - Ensure you have AWS credentials configured in `~/.aws/credentials` or set the appropriate [environment variables](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#environment-variables) in the MCP server configuration.
    - `export AWS_REGION=us-east-1` or any other region of your preference
 
 
@@ -112,4 +109,3 @@ To make changes to this MCP locally and run it:
    ```bash
    uv run awslabs.aws-mcp-server
    ```
-

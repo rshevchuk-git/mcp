@@ -23,8 +23,8 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from ..core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from awscli.clidriver import __version__ as awscli_version
-from awslabs.aws_mcp_server.core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from pathlib import Path
 from typing import Optional
 

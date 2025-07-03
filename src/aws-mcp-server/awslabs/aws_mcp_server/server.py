@@ -249,6 +249,7 @@ async def call_aws(
 def main():
     """Main entry point for the AWS MCP server."""
     global READ_OPERATIONS_INDEX
+    print(f'DEFAULT_REGION: {DEFAULT_REGION}')
 
     if DEFAULT_REGION is None:
         error_message = '[AWSMCP Error]: AWS_REGION environment variable is not defined.'

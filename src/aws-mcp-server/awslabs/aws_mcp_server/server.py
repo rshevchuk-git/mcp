@@ -251,9 +251,39 @@ def main():
     """Main entry point for the AWS MCP server."""
     global READ_OPERATIONS_INDEX
 
+    # Check if AWS_REGION is defined
     if os.getenv('AWS_REGION') is None:
         sys.stderr.write('[AWSMCP Error]: AWS_REGION environment variable is not defined.')
         raise ValueError('AWS_REGION environment variable is not defined.')
+
+    # Check if environment variables are used, they are all provided
+    env_vars_provided = sum(
+        [
+            os.getenv('AWS_ACCESS_KEY_ID') is not None,
+            os.getenv('AWS_SECRET_ACCESS_KEY') is not None,
+            os.getenv('AWS_SESSION_TOKEN') is not None,
+        ]
+    )
+
+    if env_vars_provided > 0 and env_vars_provided < 3:
+        sys.stderr.write(
+            '[AWSMCP Error]: Provided environment variables are incomplete. All AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN are required.'
+        )
+        raise ValueError(
+            'Provided environment variables are incomplete. All AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN are required.'
+        )
+
+     # Check for EXACTLY one credential method, preventing conflict
+    profile_provided = os.getenv('AWS_PROFILE') is not None
+    credential_methods = sum([profile_provided, env_vars_provided])
+
+    if credential_methods > 1:
+        sys.stderr.write(
+            '[AWSMCP Error]: Conflicting credentials provided. Both AWS_PROFILE and AWS credential environment variables are set.'
+        )
+        raise ValueError(
+            'Multiple credential methods provided. Please use either AWS_PROFILE or AWS credential environment variables, not both.'
+        )
 
     knowledge_base.setup(rag_type=RAG_TYPE)
 

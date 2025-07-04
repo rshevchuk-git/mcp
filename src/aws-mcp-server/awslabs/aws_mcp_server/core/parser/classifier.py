@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Ignoring the Semgrep finding because the minimum required Python version for AWS MCP Server is 3.10
+# nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2
 import importlib.resources
 import json
 from ..common.models import (

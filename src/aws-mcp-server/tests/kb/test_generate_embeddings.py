@@ -1,20 +1,22 @@
 import argparse
 import tempfile
-from awslabs.aws_mcp_server.core.kb.generate_embeddings import (
+from awscli.clidriver import __version__ as awscli_version
+from awslabs.aws_mcp_server.core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
+from awslabs.aws_mcp_server.scripts.generate_embeddings import (
     generate_embeddings,
 )
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.driver._get_command_table')
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.logger')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.driver._get_command_table')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.logger')
 def test_generate_embeddings_handles_exceptions(mock_logger, mock_get_command_table):
     """Test that exceptions during document retrieval are handled gracefully."""
     with tempfile.TemporaryDirectory() as temp_dir:
         cache_dir = Path(temp_dir)
         model_name = 'BAAI/bge-base-en-v1.5'
-        cache_file = cache_dir / f'{model_name.replace("/", "-")}.npz'
+        cache_file = cache_dir / f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
 
         # Create a dummy cache file
         cache_file.touch()
@@ -38,12 +40,12 @@ def test_generate_embeddings_cache_exists_no_overwrite():
     with tempfile.TemporaryDirectory() as temp_dir:
         cache_dir = Path(temp_dir)
         model_name = 'BAAI/bge-base-en-v1.5'
-        cache_file = cache_dir / f'{model_name.replace("/", "-")}.npz'
+        cache_file = cache_dir / f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
 
         # Create a dummy cache file
         cache_file.touch()
 
-        with patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.logger') as mock_logger:
+        with patch('awslabs.aws_mcp_server.scripts.generate_embeddings.logger') as mock_logger:
             generate_embeddings(model_name, cache_dir, overwrite=False)
 
             # Should log that embeddings already exist
@@ -52,9 +54,9 @@ def test_generate_embeddings_cache_exists_no_overwrite():
             )
 
 
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings._get_aws_api_documents')
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.DenseRetriever')
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.logger')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings._get_aws_api_documents')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.DenseRetriever')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.logger')
 def test_generate_embeddings_overwrite_existing(
     mock_logger, mock_dense_retriever, mock_get_aws_api_documents
 ):
@@ -62,7 +64,7 @@ def test_generate_embeddings_overwrite_existing(
     with tempfile.TemporaryDirectory() as temp_dir:
         cache_dir = Path(temp_dir)
         model_name = 'BAAI/bge-base-en-v1.5'
-        cache_file = cache_dir / f'{model_name.replace("/", "-")}.npz'
+        cache_file = cache_dir / f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
 
         # Create a dummy cache file
         cache_file.touch()
@@ -88,9 +90,9 @@ def test_generate_embeddings_overwrite_existing(
         mock_retriever_instance.save_to_cache.assert_called_once()
 
 
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.driver._get_command_table')
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.logger')
-@patch('awslabs.aws_mcp_server.core.kb.generate_embeddings.DenseRetriever')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.driver._get_command_table')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.logger')
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.DenseRetriever')
 def test_generate_embeddings_with_document_details(
     mock_dense_retriever, mock_logger, mock_get_command_table
 ):
@@ -98,7 +100,7 @@ def test_generate_embeddings_with_document_details(
     with tempfile.TemporaryDirectory() as temp_dir:
         cache_dir = Path(temp_dir)
         model_name = 'BAAI/bge-base-en-v1.5'
-        cache_file = cache_dir / f'{model_name.replace("/", "-")}.npz'
+        cache_file = cache_dir / f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
 
         # Create a dummy cache file
         cache_file.touch()

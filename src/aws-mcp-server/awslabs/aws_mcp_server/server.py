@@ -249,12 +249,19 @@ async def call_aws(
 def main():
     """Main entry point for the AWS MCP server."""
     global READ_OPERATIONS_INDEX
+    print(f'DEFAULT_REGION: {DEFAULT_REGION}')
 
     if DEFAULT_REGION is None:
-        sys.stderr.write('[AWSMCP Error]: AWS_REGION environment variable is not defined.')
-        raise ValueError('AWS_REGION environment variable is not defined.')
+        error_message = '[AWSMCP Error]: AWS_REGION environment variable is not defined.'
+        sys.stderr.write(error_message)
+        raise ValueError(error_message)
 
-    knowledge_base.setup(rag_type=RAG_TYPE)
+    try:
+        knowledge_base.setup(rag_type=RAG_TYPE)
+    except Exception as e:
+        error_message = f'[AWSMCP Error]: Error while setting up the knowledge base: {str(e)}'
+        sys.stderr.write(error_message)
+        raise RuntimeError(error_message)
 
     if READ_OPERATIONS_ONLY_MODE:
         READ_OPERATIONS_INDEX = get_read_only_operations()

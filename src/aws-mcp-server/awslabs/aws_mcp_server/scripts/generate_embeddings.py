@@ -15,9 +15,15 @@
 import argparse
 import re
 import time
-from ..aws.services import driver
-from .dense_retriever import DEFAULT_CACHE_DIR, DEFAULT_EMBEDDINGS_MODEL, DenseRetriever
+from ..core.aws.services import driver
+from ..core.kb.dense_retriever import (
+    DEFAULT_CACHE_DIR,
+    DEFAULT_EMBEDDINGS_MODEL,
+    KNOWLEDGE_BASE_SUFFIX,
+    DenseRetriever,
+)
 from awscli.clidriver import ServiceCommand
+from awscli.clidriver import __version__ as awscli_version
 from botocore import xform_name
 from loguru import logger
 from pathlib import Path
@@ -74,7 +80,8 @@ def generate_embeddings(model_name: str, cache_dir: Path, overwrite: bool):
     """Generate embeddings for AWS API commands and save them to a cache file."""
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = cache_dir / f'{model_name.replace("/", "-")}.npz'
+    cache_file = cache_dir / f'{KNOWLEDGE_BASE_SUFFIX}-{awscli_version}.npz'
+
     if cache_file.exists():
         if not overwrite:
             logger.info(
@@ -94,7 +101,6 @@ def generate_embeddings(model_name: str, cache_dir: Path, overwrite: bool):
     elapsed_time = time.time() - start_time
     logger.info(f'Generated embeddings in {elapsed_time:.2f} seconds.')
 
-    # Save to cache
     retriever.save_to_cache()
     logger.info(f'Embeddings are saved to: {cache_file}')
 

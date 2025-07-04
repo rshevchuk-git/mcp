@@ -157,13 +157,13 @@ jobs:
 
       - name: Debug outputs
         run: |
-          echo "changed-files: ${{ needs.detect-packages.outputs.changed-files }}"
+          echo "changed-files: ${{ contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/core/kb/') }}"
           echo "changed-files (raw): '${{ toJson(needs.detect-packages.outputs.changed-files) }}'"
 
       - name: Debug changed files and directories
         run: |
           echo "changed-directories: ${{ needs.detect-packages.outputs.changed-directories }}"
-          echo "changed-files: ${{ fromJson(needs.detect-packages.outputs.changed-files) }}"
+          echo "joined: ${{ join(' ', fromJson(needs.detect-packages.outputs.changed-files)) }}"
           echo "matrix.package: ${{ matrix.package }}"
           echo "contains(join(' ', fromJson(needs.detect-packages.outputs.changed-files)), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/kb/'): ${{ contains(join(' ', fromJson(needs.detect-packages.outputs.changed-files)), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/kb/') }}"
           echo "contains(join(' ', fromJson(needs.detect-packages.outputs.changed-files)), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/data/embeddings/'): ${{ contains(join(' ', fromJson(needs.detect-packages.outputs.changed-files)), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/data/embeddings/') }}"

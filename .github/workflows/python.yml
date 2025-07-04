@@ -165,9 +165,9 @@ jobs:
           echo "changed-directories: ${{ needs.detect-packages.outputs.changed-directories }}"
           echo "changed-files: ${{ needs.detect-packages.outputs.changed-files }}"
           echo "matrix.package: ${{ matrix.package }}"
-          echo "contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/core/kb/'): ${{ contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/core/kb/') }}"
-          echo "contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/core/data/embeddings/'): ${{ contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/core/data/embeddings/') }}"
-          echo "contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/scripts/'): ${{ contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/scripts/') }}"
+          echo "contains(join(' ', needs.detect-packages.outputs.changed-files), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/kb/'): ${{ contains(join(' ', needs.detect-packages.outputs.changed-files), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/kb/') }}"
+          echo "contains(join(' ', needs.detect-packages.outputs.changed-files), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/data/embeddings/'): ${{ contains(join(' ', needs.detect-packages.outputs.changed-files), 'src/aws-mcp-server/awslabs/aws_mcp_server/core/data/embeddings/') }}"
+          echo "contains(join(' ', needs.detect-packages.outputs.changed-files), 'src/aws-mcp-server/awslabs/aws_mcp_server/scripts/'): ${{ contains(join(' ', needs.detect-packages.outputs.changed-files), 'src/aws-mcp-server/awslabs/aws_mcp_server/scripts/') }}"
 
       - name: Check for existing embeddings or generate new ones if it is aws-mcp-server
         env:

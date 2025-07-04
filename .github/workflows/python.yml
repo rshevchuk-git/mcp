@@ -15,6 +15,7 @@ jobs:
     outputs:
       packages: ${{ steps.find-packages.outputs.packages }}
       changed-directories: ${{ steps.find-changed-directories.outputs.changed-directories }}
+      changed-files: ${{ steps.find-changed-directories.outputs.changed-files }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -49,6 +50,7 @@ jobs:
           CHANGEDDIRECTORIES="$(echo $CHANGEDFILES | jq -r '.[] | select(. | startswith("src\/"))' | cut -d'/' -f2 | sort -u | sed 's/^\.\///' | jq -R -s -c 'split("\n")[:-1]')"
           echo "$CHANGEDDIRECTORIES"
           echo "changed-directories=$CHANGEDDIRECTORIES" >> $GITHUB_OUTPUT
+          echo "changed-files=$CHANGEDFILES" >> $GITHUB_OUTPUT
 
       - name: Find Python packages
         id: find-packages
@@ -157,45 +159,10 @@ jobs:
         working-directory: src/${{ matrix.package }}
         run: uv run --frozen ruff check .
 
-      - name: Should rebuild AWS MCP embeddings
-        id: aws-mcp-changed
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
-        run: |
-          echo "=== DEBUGGING CHANGE DETECTION ==="
-          echo "Event: ${{ github.event_name }}"
-          echo "Current SHA: $(git rev-parse HEAD)"
-
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            COMPARE_BASE="origin/${{ github.base_ref }}"
-            echo "Base branch: ${{ github.base_ref }}"
-          else
-            # Handle new branches by comparing with main
-            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-              COMPARE_BASE="main"
-              echo "New branch detected, comparing with main"
-            else
-              COMPARE_BASE="${{ github.event.before }}"
-              echo "Before SHA: ${{ github.event.before }}"
-            fi
-          fi
-
-          echo "=== CHANGED FILES ==="
-          git diff --name-only $COMPARE_BASE...HEAD
-          echo "=== FILES MATCHING PATTERN ==="
-          git diff --name-only $COMPARE_BASE...HEAD | grep "aws_mcp_server/core/kb\|aws_mcp_server/scripts\|aws_mcp_server/core/data/embeddings" || echo "No matches found"
-
-          if git diff --name-only $COMPARE_BASE...HEAD | grep -q "aws_mcp_server/core/kb\|aws_mcp_server/scripts\|aws_mcp_server/core/data/embeddings"; then
-            echo "aws-mcp-changed=true" >> $GITHUB_OUTPUT
-            echo "Changes detected - setting aws-mcp-changed=true"
-          else
-            echo "aws-mcp-changed=false" >> $GITHUB_OUTPUT
-            echo "No changes - setting aws-mcp-changed=false"
-          fi
-
       - name: Check for existing embeddings or generate new ones if it is aws-mcp-server
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
+        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server' && (contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/core/kb/') || contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/core/data/embeddings/') || contains(join(' ', needs.detect-packages.outputs.changed-files), 'aws_mcp_server/scripts/'))
         working-directory: src/${{ matrix.package }}
         run: |
           if uv run --frozen download-latest-embeddings; then

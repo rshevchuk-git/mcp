@@ -574,7 +574,9 @@ async def test_call_aws_awscli_customization_error(
 @patch.dict(os.environ, {}, clear=True)
 def test_main_missing_aws_region():
     """Test main function raises ValueError when AWS_REGION environment variable is not set."""
-    with pytest.raises(ValueError, match='AWS_REGION environment variable is not defined.'):
+    with pytest.raises(
+        ValueError, match=r'\[AWSMCP Error\]: AWS_REGION environment variable is not defined.'
+    ):
         main()
 
 

@@ -71,7 +71,7 @@ ARN_PATTERN = re.compile(
 # These are subcommands for `aws` which are not actual services.
 # They are not ServiceCommand instances. The other example of a non-ServiceCommand
 # is the fake "s3" service, which is handled properly.
-_denied_custom_services = frozenset({'configure', 'history'})
+DENIED_CUSTOM_SERVICES = frozenset({'configure', 'history'})
 
 _excluded_optional_params = frozenset(
     {
@@ -268,7 +268,7 @@ def parse(cli_command: str) -> IRCommand:
     if isinstance(service_command, ServiceCommand):
         return _handle_service_command(service_command, global_args, remaining)
 
-    if service_command.name in _denied_custom_services:
+    if service_command.name in DENIED_CUSTOM_SERVICES:
         raise InvalidServiceError(service_command.name)
 
     return _handle_awscli_customization(global_args, remaining, tokens[0])

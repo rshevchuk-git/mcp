@@ -1,8 +1,12 @@
 import argparse
+import re
 import tempfile
 from awscli.clidriver import __version__ as awscli_version
+from awslabs.aws_mcp_server.core.aws.services import driver
 from awslabs.aws_mcp_server.core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
 from awslabs.aws_mcp_server.scripts.generate_embeddings import (
+    _generate_operation_document,
+    _get_aws_api_documents,
     generate_embeddings,
 )
 from pathlib import Path
@@ -166,3 +170,118 @@ def test_argument_parser_defaults():
     assert args.model_name == 'BAAI/bge-base-en-v1.5'
     assert args.overwrite is False
     assert 'embeddings' in args.cache_dir
+
+
+def test_generate_operation_document_happy_path():
+    """A happy path test for _generate_operation_document."""
+    # Get actual lambda service and list-aliases operation
+    lambda_command = driver._get_command_table()['lambda']
+    lambda_operations = lambda_command._get_command_table()
+    list_aliases_operation = lambda_operations['list-aliases']
+
+    result = _generate_operation_document('lambda', 'list-aliases', list_aliases_operation)
+
+    assert result is not None
+    assert result['command'] == 'aws lambda list-aliases'
+    assert re.match(r'Returns a list of.+aliases.+for a Lambda function', result['description'])
+    assert 'The name or ARN of the Lambda function.' in result['parameters']['function-name']
+    assert (
+        'Specify a function version to only list aliases that invoke that version.'
+        in result['parameters']['function-version']
+    )
+    assert (
+        "The total number of items to return in the command's output."
+        in result['parameters']['max-items']
+    )
+    assert all(desc.strip() for desc in result['parameters'].values())
+
+
+def test_generate_operation_document_for_custom_service():
+    """Test that _generate_operation_document handles custom services."""
+    s3_command = driver._get_command_table()['s3']
+    s3_operations = s3_command.subcommand_table
+    sync_operation = s3_operations['sync']
+
+    result = _generate_operation_document('s3', 'sync', sync_operation)
+
+    assert result is not None
+    assert result['command'] == 'aws s3 sync'
+    assert 'sync' in result['description'].lower()
+    assert len(result['parameters']) > 0
+    assert all(desc.strip() for desc in result['parameters'].values())
+
+
+def test_generate_operation_document_for_custom_operation():
+    """Test that _generate_operation_document handles custom operations."""
+    cf_command = driver._get_command_table()['cloudformation']
+    cf_operations = cf_command._get_command_table()
+    package_operation = cf_operations['deploy']
+
+    result = _generate_operation_document('cloudformation', 'deploy', package_operation)
+
+    assert result is not None
+    assert result['command'] == 'aws cloudformation deploy'
+    assert 'deploys the specified aws cloudformation template' in result['description'].lower()
+    assert len(result['parameters']) > 0
+    assert all(desc.strip() for desc in result['parameters'].values())
+
+    assert 'disable-rollback' in result['parameters']
+    assert 'no-disable-rollback' not in result['parameters']
+    assert 'fail-on-empty-changeset' in result['parameters']
+    assert 'no-fail-on-empty-changeset' not in result['parameters']
+
+
+def test_generate_operation_document_for_custom_subcommand():
+    """Test that _generate_operation_document handles custom subcommands."""
+    lambda_command = driver._get_command_table()['lambda']
+    lambda_operations = lambda_command._get_command_table()
+    wait_operation = lambda_operations['wait']
+
+    result = _generate_operation_document('lambda', 'wait', wait_operation)
+
+    assert result is not None
+    assert result['command'] == 'aws lambda wait'
+    assert 'wait' in result['description'].lower()
+    assert len(result['parameters']) == 0
+
+
+def test_generate_operation_document_for_custom_argument():
+    """Test that _generate_operation_document handles custom arguments."""
+    lambda_command = driver._get_command_table()['lambda']
+    lambda_operations = lambda_command._get_command_table()
+    create_function_operation = lambda_operations['create-function']
+
+    result = _generate_operation_document('lambda', 'create-function', create_function_operation)
+
+    assert result is not None
+    assert result['command'] == 'aws lambda create-function'
+    assert 'zip-file' in result['parameters']
+    assert all(desc.strip() for desc in result['parameters'].values())
+
+
+def test_get_aws_api_documents():
+    """Test _get_aws_api_documents."""
+    # Get original command table and filter to only s3, cloudformation, lambda, configure, history
+    original_table = driver._get_command_table()
+    filtered_table = {
+        k: v
+        for k, v in original_table.items()
+        if k in ['s3', 'cloudformation', 'lambda', 'configure', 'history']
+    }
+
+    with patch.object(driver, '_get_command_table', return_value=filtered_table):
+        documents = _get_aws_api_documents()
+
+    # Group documents by service name
+    service_counts = {}
+    for doc in documents:
+        service = doc['command'].split()[1]
+        service_counts[service] = service_counts.get(service, 0) + 1
+
+    # configure and history should not be included
+    assert set(service_counts.keys()) == {'s3', 'cloudformation', 'lambda'}
+    assert service_counts['cloudformation'] == len(
+        original_table['cloudformation']._get_command_table()
+    )
+    assert service_counts['lambda'] == len(original_table['lambda']._get_command_table())
+    assert service_counts['s3'] == len(original_table['s3'].subcommand_table)

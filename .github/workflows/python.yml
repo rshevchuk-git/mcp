@@ -128,6 +128,26 @@ jobs:
         working-directory: src/${{ matrix.package }}
         run: uv sync --frozen --all-extras --dev
 
+      - name: Check for existing embeddings or generate new ones for aws-mcp-server
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server'
+        working-directory: src/${{ matrix.package }}
+        run: |
+          CHANGED_FILES='${{ needs.detect-packages.outputs.changed-files }}'
+          if echo "$CHANGED_FILES" | grep -q 'aws_mcp_server/core/kb/' || \
+             echo "$CHANGED_FILES" | grep -q 'aws_mcp_server/core/data/embeddings/' || \
+             echo "$CHANGED_FILES" | grep -q 'aws_mcp_server/scripts/'; then
+            uv run --frozen generate-embeddings
+          else
+            if uv run --frozen download-latest-embeddings; then
+              echo "Successfully downloaded existing embeddings"
+            else
+              echo "No matching embeddings found, generating new ones..."
+              uv run --frozen generate-embeddings
+            fi
+          fi
+
       - name: Run tests
         working-directory: src/${{ matrix.package }}
         run: |
@@ -154,27 +174,6 @@ jobs:
       - name: Run ruff check
         working-directory: src/${{ matrix.package }}
         run: uv run --frozen ruff check .
-
-      - name: Debug changed files and directories
-        run: |
-          echo "changed-directories: ${{ needs.detect-packages.outputs.changed-directories }}"
-          echo "matrix.package: ${{ matrix.package }}"
-          echo "contains(join(' ', core/kb/'): ${{ contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/core/kb/') }}"
-          echo "contains(join(' ', core/data/embeddings/'): ${{ contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/core/data/embeddings/') }}"
-          echo "contains(join(' ', scripts/'): ${{ contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/scripts/') }}"
-
-      - name: Check for existing embeddings or generate new ones for aws-mcp-server
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-mcp-server' && (contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/core/kb/') || contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/core/data/embeddings/') || contains(needs.detect-packages.outputs.changed-files, 'aws_mcp_server/scripts/'))
-        working-directory: src/${{ matrix.package }}
-        run: |
-          if uv run --frozen download-latest-embeddings; then
-            echo "Successfully downloaded existing embeddings"
-          else
-            echo "No matching embeddings found, generating new ones..."
-            uv run --frozen generate-embeddings
-          fi
 
       - name: Build package
         working-directory: src/${{ matrix.package }}

@@ -29,7 +29,7 @@ KNOWLEDGE_BASE_SUFFIX = 'knowledge-base-awscli'
 class DenseRetriever:
     """Retrieves documents from a dense index, built by an embedding model.
 
-    The class can receive documents, generate embeddings and cache them to future use.
+    The class can receive documents, generate embeddings and cache them to future use
     """
 
     def __init__(

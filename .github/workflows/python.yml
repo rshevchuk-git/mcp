@@ -171,7 +171,7 @@ jobs:
           else
             # Handle new branches by comparing with main
             if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-              COMPARE_BASE="origin/main"
+              COMPARE_BASE="main"
               echo "New branch detected, comparing with main"
             else
               COMPARE_BASE="${{ github.event.before }}"

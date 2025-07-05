@@ -23,6 +23,7 @@ dependencies = [
     "faiss-cpu>=1.11.0",
     "loguru>=0.7.3",
     "importlib_resources>=6.0.0",
+    "gh>=0.0.4",
 ]
 license = {text = "Apache-2.0"}
 license-files = ["LICENSE", "NOTICE" ]

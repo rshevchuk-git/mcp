@@ -1,4 +1,8 @@
 import pytest
+from awslabs.aws_mcp_server.core.metadata.cache.read_only_policy import (
+    read_only_access_policy_document,
+    read_only_access_policy_version,
+)
 from awslabs.aws_mcp_server.core.metadata.read_only_operations_list import (
     READONLY_POLICY_ARN,
     ReadOnlyOperations,
@@ -128,12 +132,16 @@ def test_get_readonly_policy_document_error(mock_boto3_client):
     mock_boto3_client.return_value = mock_iam_client
     mock_iam_client.get_policy.side_effect = Exception('Access denied')
 
-    # Verify that the function raises a RuntimeError
-    with pytest.raises(RuntimeError) as excinfo:
-        get_readonly_policy_document()
+    # Call the function
+    version, document = get_readonly_policy_document()
 
-    # Verify the error message
-    assert 'Could not read ReadOnly operations from ReadOnly policy document' in str(excinfo.value)
+    # Verify the results
+    assert version == read_only_access_policy_version()
+    assert document == read_only_access_policy_document()
+
+    # Verify the boto3 calls
+    mock_boto3_client.assert_called_once_with('iam')
+    mock_iam_client.get_policy.assert_called_once_with(PolicyArn=READONLY_POLICY_ARN)
 
 
 @patch(

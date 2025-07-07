@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import boto3
-from cache.read_only_policy import (
+from .cache.read_only_policy import (
     read_only_access_policy_document,
     read_only_access_policy_version,
 )

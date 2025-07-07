@@ -37,6 +37,7 @@ from ..parser.lexer import split_cli_command
 from .driver import interpret_command as _interpret_command
 from botocore.exceptions import NoCredentialsError
 from io import StringIO
+from loguru import logger
 from typing import Any
 
 
@@ -47,6 +48,8 @@ def get_local_credentials() -> Credentials:
 
     if aws_creds is None:
         raise NoCredentialsError()
+
+    logger.info(f'Found credentials in {aws_creds.method}.')  # logging the source of credentials
     return Credentials(
         access_key_id=aws_creds.access_key,
         secret_access_key=aws_creds.secret_key,

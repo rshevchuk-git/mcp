@@ -8,6 +8,7 @@ from awslabs.aws_mcp_server.scripts.generate_embeddings import (
     _generate_operation_document,
     _get_aws_api_documents,
     generate_embeddings,
+    main,
 )
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -285,3 +286,54 @@ def test_get_aws_api_documents():
     )
     assert service_counts['lambda'] == len(original_table['lambda']._get_command_table())
     assert service_counts['s3'] == len(original_table['s3'].subcommand_table)
+
+    @patch('awslabs.aws_mcp_server.scripts.generate_embeddings.driver._get_command_table')
+    def test_get_aws_api_documents_unknown_command_type(self, mock_get_command_table):
+        """Test handling of unknown command types."""
+        # Mock unknown command type
+        mock_unknown_command = MagicMock()
+
+        # Mock driver command table
+        mock_get_command_table.return_value = {'test-service': mock_unknown_command}
+
+        with patch('awslabs.aws_mcp_server.scripts.generate_embeddings.logger') as mock_logger:
+            documents = _get_aws_api_documents()
+
+            assert len(documents) == 0
+            mock_logger.warning.assert_called_once()
+
+    @patch('awslabs.aws_mcp_server.scripts.generate_embeddings.generate_embeddings')
+    @patch('awslabs.aws_mcp_server.scripts.generate_embeddings.argparse.ArgumentParser')
+    def test_main_default_args(self, mock_parser_class, mock_generate):
+        """Test main function with default arguments."""
+        # Mock argument parser
+        mock_parser = MagicMock()
+        mock_args = MagicMock()
+        mock_args.model_name = 'default-model'
+        mock_args.cache_dir = '/default/cache'
+        mock_args.overwrite = False
+        mock_parser.parse_args.return_value = mock_args
+        mock_parser_class.return_value = mock_parser
+
+        with patch('awslabs.aws_mcp_server.scripts.generate_embeddings.Path') as mock_path:
+            mock_path.return_value = Path('/mock/cache')
+            main()
+            mock_generate.assert_called_once_with('default-model', Path('/mock/cache'), False)
+
+    @patch('awslabs.aws_mcp_server.scripts.generate_embeddings.generate_embeddings')
+    @patch('awslabs.aws_mcp_server.scripts.generate_embeddings.argparse.ArgumentParser')
+    def test_main_custom_args(self, mock_parser_class, mock_generate):
+        """Test main function with custom arguments."""
+        # Mock argument parser
+        mock_parser = MagicMock()
+        mock_args = MagicMock()
+        mock_args.model_name = 'custom-model'
+        mock_args.cache_dir = '/custom/cache'
+        mock_args.overwrite = True
+        mock_parser.parse_args.return_value = mock_args
+        mock_parser_class.return_value = mock_parser
+
+        with patch('awslabs.aws_mcp_server.scripts.generate_embeddings.Path') as mock_path:
+            mock_path.return_value = Path('/custom/cache')
+            main()
+            mock_generate.assert_called_once_with('custom-model', Path('/custom/cache'), True)

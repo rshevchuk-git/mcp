@@ -13,6 +13,10 @@
 # limitations under the License.
 
 import boto3
+from cache.read_only_policy import (
+    read_only_access_policy_document,
+    read_only_access_policy_version,
+)
 from itertools import chain
 from loguru import logger
 
@@ -72,9 +76,10 @@ def get_readonly_policy_document():
         return default_version, policy_document
     except Exception as e:
         logger.error(f'Error retrieving ReadOnly policy document: {str(e)}')
-        raise RuntimeError(
-            'Could not read ReadOnly operations from ReadOnly policy document'
-        ) from e
+        logger.warning(
+            f'Using cached read only policy with version id: {read_only_access_policy_version()}'
+        )
+        return read_only_access_policy_version(), read_only_access_policy_document()
 
 
 def get_read_only_operations() -> ReadOnlyOperations:

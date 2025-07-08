@@ -12,92 +12,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import boto3
-from itertools import chain
+
+import requests
 from loguru import logger
 
 
-READONLY_POLICY_ARN = 'arn:aws:iam::aws:policy/ReadOnlyAccess'
+SERVICE_REFERENCE_URL = 'https://servicereference.us-east-1.amazonaws.com/'
+DEFAULT_REQUEST_TIMEOUT = 5
+
+
+class ServiceReferenceUrlsByService(dict):
+    """Service reference urls by service."""
+
+    def __init__(self):
+        """Initialize the urls by service map."""
+        super().__init__()
+        try:
+            response = requests.get(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT).json()
+        except Exception as e:
+            logger.error(f'Error retrieving the service reference document: {e}')
+            raise RuntimeError(f'Error retrieving the service reference document: {e}')
+        for service_reference in response:
+            self[service_reference['service']] = service_reference['url']
 
 
 class ReadOnlyOperations(dict):
-    """Read only operations list."""
+    """Read only operations list by service."""
 
-    def __init__(self, policy_version=None):
+    def __init__(self, service_reference_urls_by_service: dict):
         """Initialize the read only operations list."""
         super().__init__()
-        self['metadata'] = {'policy_version': policy_version}
-        self._version = policy_version
-
-    @property
-    def version(self):
-        """Get the version of the read only operations list."""
-        return self._version
+        self._service_reference_urls_by_service = service_reference_urls_by_service
 
     def has(self, service, operation) -> bool:
         """Check if the operation is in the read only operations list."""
         logger.info(f'checking in read only list : {service} - {operation}')
-        if '*' in self:
-            # in cases like "*" or "*:*" which allows everything
-            return True
-
         if service not in self:
-            return False
+            if service not in self._service_reference_urls_by_service:
+                return False
+            self._cache_ready_only_operations_for_service(service)
+        return operation in self[service]
 
-        operations = self[service]
-        # Operations can end with * wildcard
-        for op in operations:
-            if op.endswith('*'):
-                if operation.startswith(op[:-1]):
-                    return True
-            elif op == operation:
-                return True
-
-        return False
-
-
-def get_readonly_policy_document():
-    """Get the read only policy document."""
-    iam = boto3.client('iam')
-    try:
-        # Verify the policy exists and get its details
-        get_policy_response = iam.get_policy(PolicyArn=READONLY_POLICY_ARN)
-        default_version = get_policy_response['Policy']['DefaultVersionId']
-
-        version_response = iam.get_policy_version(
-            PolicyArn=READONLY_POLICY_ARN, VersionId=default_version
-        )
-
-        policy_document = version_response['PolicyVersion']['Document']
-        return default_version, policy_document
-    except Exception as e:
-        logger.error(f'Error retrieving ReadOnly policy document: {str(e)}')
-        raise RuntimeError(
-            'Could not read ReadOnly operations from ReadOnly policy document'
-        ) from e
+    def _cache_ready_only_operations_for_service(self, service: str):
+        try:
+            response = requests.get(
+                self._service_reference_urls_by_service[service], timeout=DEFAULT_REQUEST_TIMEOUT
+            ).json()
+        except Exception as e:
+            logger.error(f'Error retrieving the service reference document: {e}')
+            raise RuntimeError(f'Error retrieving the service reference document: {e}')
+        self[service] = []
+        for action in response['Actions']:
+            if not action['Annotations']['Properties']['IsWrite']:
+                self[service].append(action['Name'])
 
 
 def get_read_only_operations() -> ReadOnlyOperations:
     """Get the read only operations."""
-    policy_version, policy_document = get_readonly_policy_document()
-
-    # Extract the list of actions
-    # Statement list can have multiple statement objects. Needs to merge actions from all of them
-    actions = chain.from_iterable(
-        statement['Action'] for statement in policy_document['Statement']
-    )
-
-    actions_grouped_by_service = ReadOnlyOperations(policy_version=policy_version)
-    for action in actions:
-        if action == '*':
-            # if action is plain "*", then allow all service and all operations
-            actions_grouped_by_service['*'] = ['*']
-            continue
-
-        action_split = action.split(':')
-        service = action_split[0]
-        operation = action_split[1]
-        actions_grouped_by_service[service] = actions_grouped_by_service.get(service, [])
-        actions_grouped_by_service[service].append(operation)
-
-    return actions_grouped_by_service
+    return ReadOnlyOperations(ServiceReferenceUrlsByService())

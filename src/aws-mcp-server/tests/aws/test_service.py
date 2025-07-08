@@ -374,26 +374,8 @@ def test_is_operation_read_only_returns_true_for_read_only_operation():
         )
     )
 
-    read_only_operations = ReadOnlyOperations()
-    read_only_operations['s3'] = ['list-buckets', 'get-*']
-
-    result = is_operation_read_only(ir, read_only_operations)
-
-    assert result is True
-
-
-def test_is_operation_read_only_returns_true_for_wildcard_match():
-    """Test is_operation_read_only returns True for a wildcard match."""
-    ir = IRTranslation(
-        command_metadata=CommandMetadata(
-            service_sdk_name='s3',
-            service_full_sdk_name='Amazon S3',
-            operation_sdk_name='get-object',
-        )
-    )
-
-    read_only_operations = ReadOnlyOperations()
-    read_only_operations['s3'] = ['list-buckets', 'get-*']
+    read_only_operations = ReadOnlyOperations({})
+    read_only_operations['s3'] = ['list-buckets']
 
     result = is_operation_read_only(ir, read_only_operations)
 
@@ -410,8 +392,8 @@ def test_is_operation_read_only_returns_false_for_non_read_only_operation():
         )
     )
 
-    read_only_operations = ReadOnlyOperations()
-    read_only_operations['s3'] = ['list-buckets', 'get-*']
+    read_only_operations = ReadOnlyOperations({})
+    read_only_operations['s3'] = ['list-buckets']
 
     result = is_operation_read_only(ir, read_only_operations)
 
@@ -428,8 +410,8 @@ def test_is_operation_read_only_returns_false_for_unknown_service():
         )
     )
 
-    read_only_operations = ReadOnlyOperations()
-    read_only_operations['s3'] = ['list-buckets', 'get-*']
+    read_only_operations = ReadOnlyOperations({})
+    read_only_operations['s3'] = ['list-buckets']
 
     result = is_operation_read_only(ir, read_only_operations)
 
@@ -439,7 +421,7 @@ def test_is_operation_read_only_returns_false_for_unknown_service():
 def test_is_operation_read_only_raises_error_for_missing_command_metadata():
     """Test is_operation_read_only raises error for missing command metadata."""
     ir = IRTranslation(command_metadata=None)
-    read_only_operations = ReadOnlyOperations()
+    read_only_operations = ReadOnlyOperations({})
 
     with pytest.raises(RuntimeError, match='failed to check if operation is allowed'):
         is_operation_read_only(ir, read_only_operations)
@@ -454,7 +436,7 @@ def test_is_operation_read_only_raises_error_for_missing_service_name():
             operation_sdk_name='list-buckets',
         )
     )
-    read_only_operations = ReadOnlyOperations()
+    read_only_operations = ReadOnlyOperations({})
 
     with pytest.raises(RuntimeError, match='failed to check if operation is allowed'):
         is_operation_read_only(ir, read_only_operations)
@@ -467,7 +449,7 @@ def test_is_operation_read_only_raises_error_for_missing_operation_name():
             service_sdk_name='s3', service_full_sdk_name='Amazon S3', operation_sdk_name=''
         )
     )
-    read_only_operations = ReadOnlyOperations()
+    read_only_operations = ReadOnlyOperations({})
 
     with pytest.raises(RuntimeError, match='failed to check if operation is allowed'):
         is_operation_read_only(ir, read_only_operations)

@@ -1,212 +1,174 @@
 import pytest
-from awslabs.aws_mcp_server.core.metadata.cache.read_only_policy import (
-    read_only_access_policy_document,
-    read_only_access_policy_version,
-)
 from awslabs.aws_mcp_server.core.metadata.read_only_operations_list import (
-    READONLY_POLICY_ARN,
+    SERVICE_REFERENCE_URL,
     ReadOnlyOperations,
-    get_read_only_operations,
-    get_readonly_policy_document,
+    ServiceReferenceUrlsByService,
 )
-from unittest.mock import MagicMock, patch
+from requests import Response
+from unittest.mock import MagicMock, call, patch
+
+
+TEST_SERVICE = 'testService'
+TEST_URL = 'https://test-url.json'
+TEST_READ_OPERATION = 'TestReadOperation'
+TEST_READ_OPERATION_2 = 'TestReadOperation2'
+TEST_WRITE_OPERATION = 'TestWriteOperation'
 
 
 @pytest.fixture
-def sample_policy_document():
+def sample_service_reference_list_response():
+    """Fixture providing a sample policy document."""
+    return [{'service': TEST_SERVICE, 'url': TEST_URL}]
+
+
+@pytest.fixture
+def sample_service_reference_response():
     """Fixture providing a sample policy document."""
     return {
-        'Statement': [
+        'Name': TEST_SERVICE,
+        'Actions': [
             {
-                'Effect': 'Allow',
-                'Action': [
-                    'ec2:Describe*',
-                    'ec2:Get*',
-                    's3:Get*',
-                    's3:List*',
-                    'dynamodb:DescribeTable',
-                    'lambda:GetFunction',
-                ],
+                'Name': TEST_READ_OPERATION,
+                'ActionConditionKeys': [],
+                'Annotations': {
+                    'Properties': {
+                        'IsList': False,
+                        'IsPermissionManagement': False,
+                        'IsTaggingOnly': False,
+                        'IsWrite': False,
+                    }
+                },
+                'Resources': [{'Name': TEST_READ_OPERATION}],
             },
             {
-                'Effect': 'Allow',
-                'Action': [
-                    'cloudwatch:Describe*',
-                    'cloudwatch:Get*',
-                    'cloudwatch:List*',
-                ],
+                'Name': TEST_READ_OPERATION_2,
+                'ActionConditionKeys': [],
+                'Annotations': {
+                    'Properties': {
+                        'IsList': False,
+                        'IsPermissionManagement': False,
+                        'IsTaggingOnly': False,
+                        'IsWrite': False,
+                    }
+                },
+                'Resources': [{'Name': TEST_READ_OPERATION_2}],
             },
-        ]
+            {
+                'Name': TEST_WRITE_OPERATION,
+                'ActionConditionKeys': [],
+                'Annotations': {
+                    'Properties': {
+                        'IsList': False,
+                        'IsPermissionManagement': False,
+                        'IsTaggingOnly': False,
+                        'IsWrite': True,
+                    }
+                },
+                'Resources': [{'Name': TEST_WRITE_OPERATION}],
+            },
+        ],
     }
 
 
-@pytest.fixture
-def sample_read_only_operations():
-    """Fixture providing a sample ReadOnlyOperations instance."""
-    operations = ReadOnlyOperations(policy_version='v1')
-    operations['ec2'] = ['Describe*', 'Get*']
-    operations['s3'] = ['Get*', 'List*']
-    operations['dynamodb'] = ['DescribeTable']
-    operations['lambda'] = ['GetFunction']
-    operations['cloudwatch'] = ['Describe*', 'Get*', 'List*']
-    return operations
-
-
-def test_read_only_operations_initialization():
+@patch('requests.get')
+def test_read_only_operations_initialization(
+    mocked_requests_get, sample_service_reference_list_response
+):
     """Test ReadOnlyOperations initialization and version retrieval."""
-    operations = ReadOnlyOperations(policy_version='v1')
+    mocked_service_reference_list_response = MagicMock(spec=Response)
+    mocked_service_reference_list_response.json.return_value = (
+        sample_service_reference_list_response
+    )
+    mocked_requests_get.return_value = mocked_service_reference_list_response
 
-    assert operations.version == 'v1'
+    operations = ReadOnlyOperations(ServiceReferenceUrlsByService())
+
     assert isinstance(operations, dict)
-    assert 'metadata' in operations
-    assert operations['metadata']['policy_version'] == 'v1'
+    mocked_requests_get.assert_called_once_with(SERVICE_REFERENCE_URL)
 
 
-def test_read_only_operations_has_method(sample_read_only_operations):
-    """Test the has method of ReadOnlyOperations."""
-    operations = sample_read_only_operations
+@patch('requests.get')
+def test_read_only_operations_has_method_missing_service(
+    mocked_requests_get, sample_service_reference_list_response, sample_service_reference_response
+):
+    """Test the has method of ReadOnlyOperations when the provided service is missing."""
+    mocked_service_reference_list_response = MagicMock(spec=Response)
+    mocked_service_reference_list_response.json.return_value = (
+        sample_service_reference_list_response
+    )
+    mocked_service_reference_response = MagicMock(spec=Response)
+    mocked_service_reference_response.json.return_value = sample_service_reference_response
+    mocked_requests_get.side_effect = [
+        mocked_service_reference_list_response,
+        mocked_service_reference_response,
+    ]
 
-    # Test exact match
-    assert operations.has('dynamodb', 'DescribeTable')
-    assert operations.has('lambda', 'GetFunction')
+    operations = ReadOnlyOperations(ServiceReferenceUrlsByService())
 
-    # Test wildcard match
-    assert operations.has('ec2', 'DescribeInstances')
-    assert operations.has('s3', 'GetObject')
-    assert operations.has('cloudwatch', 'ListMetrics')
-
-    # Test non-matching operation
-    assert not operations.has('ec2', 'RunInstances')
-    assert not operations.has('s3', 'PutObject')
-
-    # Test non-existing service
-    assert not operations.has('iam', 'GetRole')
-
-
-def test_read_only_operations_has_method_with_action_as_asterik():
-    """Test the has method return true if policy had a * for actions."""
-    operations = ReadOnlyOperations(policy_version='v1')
-    operations['*'] = ['*']
-    assert operations.has('random-service', 'random-operation')
-
-
-def test_read_only_operations_has_method_with_empty_service():
-    """Test the has method when service is not in the operations dict."""
-    operations = ReadOnlyOperations(policy_version='v1')
-    assert operations.has('ec2', 'DescribeInstances') is False
-
-
-@patch('boto3.client')
-def test_get_readonly_policy_document(mock_boto3_client, sample_policy_document):
-    """Test get_readonly_policy_document function."""
-    # Setup mock responses
-    mock_iam_client = MagicMock()
-    mock_boto3_client.return_value = mock_iam_client
-
-    mock_iam_client.get_policy.return_value = {'Policy': {'DefaultVersionId': 'v1'}}
-
-    mock_iam_client.get_policy_version.return_value = {
-        'PolicyVersion': {'Document': sample_policy_document}
-    }
-
-    # Call the function
-    version, document = get_readonly_policy_document()
-
-    # Verify the results
-    assert version == 'v1'
-    assert document == sample_policy_document
-
-    # Verify the boto3 calls
-    mock_boto3_client.assert_called_once_with('iam')
-    mock_iam_client.get_policy.assert_called_once_with(PolicyArn=READONLY_POLICY_ARN)
-    mock_iam_client.get_policy_version.assert_called_once_with(
-        PolicyArn=READONLY_POLICY_ARN, VersionId='v1'
+    assert isinstance(operations, dict)
+    assert operations.has(TEST_SERVICE, TEST_READ_OPERATION)
+    assert not operations.has(TEST_SERVICE, TEST_WRITE_OPERATION)
+    mocked_requests_get.assert_has_calls(
+        [call(SERVICE_REFERENCE_URL), call(TEST_URL)], any_order=False
     )
 
 
-@patch('boto3.client')
-def test_get_readonly_policy_document_error(mock_boto3_client):
-    """Test get_readonly_policy_document function when an error occurs."""
-    # Setup mock to raise an exception
-    mock_iam_client = MagicMock()
-    mock_boto3_client.return_value = mock_iam_client
-    mock_iam_client.get_policy.side_effect = Exception('Access denied')
+@patch('requests.get')
+def test_read_only_operations_has_method_second_call_for_service_queries_local_cache(
+    mocked_requests_get, sample_service_reference_list_response, sample_service_reference_response
+):
+    """Test the has method of ReadOnlyOperations when the provided service is available."""
+    mocked_service_reference_list_response = MagicMock(spec=Response)
+    mocked_service_reference_list_response.json.return_value = (
+        sample_service_reference_list_response
+    )
+    mocked_service_reference_response = MagicMock(spec=Response)
+    mocked_service_reference_response.json.return_value = sample_service_reference_response
+    mocked_requests_get.side_effect = [
+        mocked_service_reference_list_response,
+        mocked_service_reference_response,
+    ]
 
-    # Call the function
-    version, document = get_readonly_policy_document()
+    operations = ReadOnlyOperations(ServiceReferenceUrlsByService())
 
-    # Verify the results
-    assert version == read_only_access_policy_version()
-    assert document == read_only_access_policy_document()
-
-    # Verify the boto3 calls
-    mock_boto3_client.assert_called_once_with('iam')
-    mock_iam_client.get_policy.assert_called_once_with(PolicyArn=READONLY_POLICY_ARN)
-
-
-@patch(
-    'awslabs.aws_mcp_server.core.metadata.read_only_operations_list.get_readonly_policy_document'
-)
-def test_get_read_only_operations(mock_get_policy, sample_policy_document):
-    """Test get_read_only_operations function."""
-    # Setup mock response
-    mock_get_policy.return_value = ('v1', sample_policy_document)
-
-    # Call the function
-    operations = get_read_only_operations()
-
-    # Verify the result is a ReadOnlyOperations instance
-    assert isinstance(operations, ReadOnlyOperations)
-    assert operations.version == 'v1'
-
-    # Verify the operations are correctly parsed from the policy document
-    assert 'ec2' in operations
-    assert 'Describe*' in operations['ec2']
-    assert 'Get*' in operations['ec2']
-
-    assert 's3' in operations
-    assert 'Get*' in operations['s3']
-    assert 'List*' in operations['s3']
-
-    assert 'dynamodb' in operations
-    assert 'DescribeTable' in operations['dynamodb']
-
-    assert 'lambda' in operations
-    assert 'GetFunction' in operations['lambda']
-
-    assert 'cloudwatch' in operations
-    assert 'Describe*' in operations['cloudwatch']
-    assert 'Get*' in operations['cloudwatch']
-    assert 'List*' in operations['cloudwatch']
+    assert isinstance(operations, dict)
+    # First call for a service, should get data from service reference API
+    assert operations.has(TEST_SERVICE, TEST_READ_OPERATION)
+    # Second call for the same service, should lookup data from local cache
+    assert operations.has(TEST_SERVICE, TEST_READ_OPERATION_2)
+    mocked_requests_get.assert_has_calls(
+        [call(SERVICE_REFERENCE_URL), call(TEST_URL)], any_order=False
+    )
+    assert mocked_requests_get.call_count == 2
 
 
-@patch(
-    'awslabs.aws_mcp_server.core.metadata.read_only_operations_list.get_readonly_policy_document'
-)
-def test_get_read_only_operations_with_asterik_as_action(mock_get_policy):
-    """Test get_read_only_operation sets asterik for service when action is just asterik."""
-    sample_policy_document = {
-        'Statement': [
-            {
-                'Effect': 'Allow',
-                'Action': [
-                    'cloudwatch:Describe*',
-                    'cloudwatch:Get*',
-                    'cloudwatch:List*',
-                ],
-            },
-            {
-                'Effect': 'Allow',
-                'Action': [
-                    '*',
-                ],
-            },
-        ]
-    }
+@patch('requests.get')
+def test_read_only_operations_has_method_error(
+    mocked_requests_get, sample_service_reference_list_response
+):
+    """Test the has method of ReadOnlyOperations when the service reference API call throws an error."""
+    mocked_response = MagicMock(spec=Response)
+    mocked_response.json.return_value = sample_service_reference_list_response
+    mocked_requests_get.side_effect = [
+        mocked_response,
+        RuntimeError('Error while calling service reference API'),
+    ]
 
-    mock_get_policy.return_value = ('v1', sample_policy_document)
+    operations = ReadOnlyOperations(ServiceReferenceUrlsByService())
 
-    # Call the function
-    operations = get_read_only_operations()
+    assert isinstance(operations, dict)
+    with pytest.raises(RuntimeError):
+        operations.has(TEST_SERVICE, TEST_READ_OPERATION)
+    mocked_requests_get.assert_has_calls(
+        [call(SERVICE_REFERENCE_URL), call(TEST_URL)], any_order=False
+    )
 
-    assert operations.has('random-service', 'random-operation')
+
+@patch('requests.get')
+def test_service_reference_urls_by_service_error(mocked_requests_get):
+    """Test ServiceReferenceUrlsByService initialization when the service reference API call throws an error."""
+    mocked_requests_get.side_effect = RuntimeError('Error while calling service reference API')
+
+    with pytest.raises(RuntimeError):
+        ServiceReferenceUrlsByService()
+    mocked_requests_get.assert_has_calls([call(SERVICE_REFERENCE_URL)], any_order=False)

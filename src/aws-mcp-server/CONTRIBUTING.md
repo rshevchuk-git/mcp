@@ -41,7 +41,7 @@ Add the following code to your MCP client configuration (e.g., for Amazon Q Deve
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
         "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false"
+        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables" in README.md.
       },
       "disabled": false,
       "autoApprove": []

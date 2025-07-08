@@ -34,7 +34,7 @@ For Linux/MacOS users:
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
         "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false"
+        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
       },
       "disabled": false,
       "autoApprove": []
@@ -58,7 +58,7 @@ For Windows users:
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
         "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false"
+        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
       },
       "disabled": false,
       "autoApprove": []
@@ -101,7 +101,10 @@ We use credentials to control which commands this MCP server can execute. This M
 - If IAM roles are not available, [these alternatives](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html#cli-configure-files-examples) can also be used to configure credentials.
 - To add another layer of security, users can explicitly set the environment variable `READ_OPERATIONS_ONLY` to true in their MCP config file. When set to true, we'll compare each CLI command against a list of known read-only actions, and will only execute the command if it's found in the allowed list. "Read-Only" only refers to the API classification, not the file syste, that is such "read-only" actions can still write to the file system if necessary or upon user request. While this environment variable provides an additional layer of protection, IAM permissions remain the primary and most reliable security control. Users should always configure appropriate IAM roles and policies for their use case, as IAM credentials take precedence over this environment variable.
 
-
+With all the security measures mentioned above, do understand that Large Langue Models (LLMs) are non-deterministic, and hallucinations can happen. It is your responsibility to use the best judgement on where to apply these tools. For example:
+- A user asks the client to "Clean up my old test databases that aren't being used anymore". The LLM might assume ALL databases with "test" in the name are safe to delete, hence calling
+`aws rds delete-db-instance --db-instance-identifier prod-test-analytics --region us-east-1 --skip-final-snapshot`. It fails to realize that "prod-test-analytics" was a production database used for testing analytics features. The deletion is irreversible and now the users loses all their data in that database.
+- A user asks the LLM to "Download form.template from myonly s3 bucket to ~/temp/tests.txt". The LLM might create a directory `~`, under which it creates another directory `temp` to hold the `test.txt` file, it fails to understand that `~` points to the user's home directory. It was not a breaking change, but the file was created in the wrong place and the user might not be aware of it.
 
 ## Environment variables
 #### Required
@@ -112,7 +115,8 @@ We use credentials to control which commands this MCP server can execute. This M
 - `AWS_PROFILE` (string, default: "default"): AWS Profile for credentials to use for command executions, 'default' will be used if not specified
 - `READ_OPERATIONS_ONLY` (boolean, default: false): Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true".
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN`: Use environment variables to configure credentials, these take precedence over `AWS_PROFILE`, read more about boto3's default order of credential sources [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials)
-- `AWS_MCP_TELEMETRY` (boolean, default: false): Allow sending additional telemetry data to AWS related to the server configuration.
+- `AWS_MCP_TELEMETRY` (boolean, default: false): Allow sending additional telemetry data to AWS related to the server configuration. These data include:
+  - call_aws() tool is used with `READ_OPERATIONS_ONLY` set to true or false
 
 
 ## License
@@ -122,4 +126,4 @@ Licensed under the Apache License, Version 2.0 (the "License").
 
 
 ## Disclaimer
-This aws-mcp package is provided "as is" without warranty of any kind, express or implied, and is intended for development, testing, and evaluation purposes only. We do not provide any guarantee on the quality, performance, or reliability of this package. LLMs are non-deterministic and they make mistakes, we advise you to test the tools as much as possible before making decisions about production readiness. Users of this package are solely responsible for implementing proper security controls and MUST use AWS Identity and Access Management (IAM) to manage access to AWS resources. You are responsible for configuring appropriate IAM policies, roles, and permissions, and any security vulnerabilities resulting from improper IAM configuration are your sole responsibility. By using this package, you acknowledge that you have read and understood this disclaimer and agree to use the package at your own risk.
+This aws-mcp package is provided "as is" without warranty of any kind, express or implied, and is intended for development, testing, and evaluation purposes only. We do not provide any guarantee on the quality, performance, or reliability of this package. LLMs are non-deterministic and they make mistakes, we advise you to always thoroughly test and follow the best practices of your organization before using these tools on customer facing accounts. Users of this package are solely responsible for implementing proper security controls and MUST use AWS Identity and Access Management (IAM) to manage access to AWS resources. You are responsible for configuring appropriate IAM policies, roles, and permissions, and any security vulnerabilities resulting from improper IAM configuration are your sole responsibility. By using this package, you acknowledge that you have read and understood this disclaimer and agree to use the package at your own risk.

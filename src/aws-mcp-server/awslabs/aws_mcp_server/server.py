@@ -39,7 +39,7 @@ from botocore.exceptions import NoCredentialsError
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
-from typing import Annotated, Any, cast
+from typing import Annotated, Any, Optional, cast
 
 
 # Configure Loguru logging
@@ -47,7 +47,7 @@ logger.remove()
 logger.add(sys.stderr, level=FASTMCP_LOG_LEVEL)
 
 server = FastMCP(name='AWSMCP', log_level=FASTMCP_LOG_LEVEL)
-READ_OPERATIONS_INDEX: ReadOnlyOperations = ReadOnlyOperations()
+READ_OPERATIONS_INDEX: Optional[ReadOnlyOperations] = None
 
 
 @server.tool(
@@ -181,7 +181,9 @@ async def call_aws(
                 detail=error_message,
             )
 
-        if READ_OPERATIONS_ONLY_MODE and not is_operation_read_only(ir, READ_OPERATIONS_INDEX):
+        if READ_OPERATIONS_ONLY_MODE and (
+            READ_OPERATIONS_INDEX is None or not is_operation_read_only(ir, READ_OPERATIONS_INDEX)
+        ):
             error_message = (
                 'Execution of this operation is not allowed because read only mode is enabled. '
                 f'It can be disabled by setting the {READ_ONLY_KEY} environment variable to False.'

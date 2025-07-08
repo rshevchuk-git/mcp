@@ -1,5 +1,6 @@
 import pytest
 from awslabs.aws_mcp_server.core.metadata.read_only_operations_list import (
+    DEFAULT_REQUEST_TIMEOUT,
     SERVICE_REFERENCE_URL,
     ReadOnlyOperations,
     ServiceReferenceUrlsByService,
@@ -84,7 +85,9 @@ def test_read_only_operations_initialization(
     operations = ReadOnlyOperations(ServiceReferenceUrlsByService())
 
     assert isinstance(operations, dict)
-    mocked_requests_get.assert_called_once_with(SERVICE_REFERENCE_URL)
+    mocked_requests_get.assert_called_once_with(
+        SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT
+    )
 
 
 @patch('requests.get')
@@ -109,7 +112,11 @@ def test_read_only_operations_has_method_missing_service(
     assert operations.has(TEST_SERVICE, TEST_READ_OPERATION)
     assert not operations.has(TEST_SERVICE, TEST_WRITE_OPERATION)
     mocked_requests_get.assert_has_calls(
-        [call(SERVICE_REFERENCE_URL), call(TEST_URL)], any_order=False
+        [
+            call(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT),
+            call(TEST_URL, timeout=DEFAULT_REQUEST_TIMEOUT),
+        ],
+        any_order=False,
     )
 
 
@@ -137,7 +144,11 @@ def test_read_only_operations_has_method_second_call_for_service_queries_local_c
     # Second call for the same service, should lookup data from local cache
     assert operations.has(TEST_SERVICE, TEST_READ_OPERATION_2)
     mocked_requests_get.assert_has_calls(
-        [call(SERVICE_REFERENCE_URL), call(TEST_URL)], any_order=False
+        [
+            call(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT),
+            call(TEST_URL, timeout=DEFAULT_REQUEST_TIMEOUT),
+        ],
+        any_order=False,
     )
     assert mocked_requests_get.call_count == 2
 
@@ -160,7 +171,11 @@ def test_read_only_operations_has_method_error(
     with pytest.raises(RuntimeError):
         operations.has(TEST_SERVICE, TEST_READ_OPERATION)
     mocked_requests_get.assert_has_calls(
-        [call(SERVICE_REFERENCE_URL), call(TEST_URL)], any_order=False
+        [
+            call(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT),
+            call(TEST_URL, timeout=DEFAULT_REQUEST_TIMEOUT),
+        ],
+        any_order=False,
     )
 
 
@@ -171,4 +186,6 @@ def test_service_reference_urls_by_service_error(mocked_requests_get):
 
     with pytest.raises(RuntimeError):
         ServiceReferenceUrlsByService()
-    mocked_requests_get.assert_has_calls([call(SERVICE_REFERENCE_URL)], any_order=False)
+    mocked_requests_get.assert_has_calls(
+        [call(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT)], any_order=False
+    )

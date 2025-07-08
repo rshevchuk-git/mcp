@@ -18,6 +18,7 @@ from loguru import logger
 
 
 SERVICE_REFERENCE_URL = 'https://servicereference.us-east-1.amazonaws.com/'
+DEFAULT_REQUEST_TIMEOUT = 5
 
 
 class ServiceReferenceUrlsByService(dict):
@@ -27,7 +28,7 @@ class ServiceReferenceUrlsByService(dict):
         """Initialize the urls by service map."""
         super().__init__()
         try:
-            response = requests.get(SERVICE_REFERENCE_URL).json()
+            response = requests.get(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT).json()
         except Exception as e:
             logger.error(f'Error retrieving the service reference document: {e}')
             raise RuntimeError(f'Error retrieving the service reference document: {e}')
@@ -54,7 +55,9 @@ class ReadOnlyOperations(dict):
 
     def _cache_ready_only_operations_for_service(self, service: str):
         try:
-            response = requests.get(self._service_reference_urls_by_service[service]).json()
+            response = requests.get(
+                self._service_reference_urls_by_service[service], timeout=DEFAULT_REQUEST_TIMEOUT
+            ).json()
         except Exception as e:
             logger.error(f'Error retrieving the service reference document: {e}')
             raise RuntimeError(f'Error retrieving the service reference document: {e}')

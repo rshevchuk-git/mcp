@@ -1,13 +1,15 @@
 import argparse
 import re
+import sys
 import tempfile
 from awscli.clidriver import __version__ as awscli_version
 from awslabs.aws_mcp_server.core.aws.services import driver
-from awslabs.aws_mcp_server.core.kb.dense_retriever import KNOWLEDGE_BASE_SUFFIX
+from awslabs.aws_mcp_server.core.kb.dense_retriever import DEFAULT_CACHE_DIR, KNOWLEDGE_BASE_SUFFIX
 from awslabs.aws_mcp_server.scripts.generate_embeddings import (
     _generate_operation_document,
     _get_aws_api_documents,
     generate_embeddings,
+    main,
 )
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -285,3 +287,48 @@ def test_get_aws_api_documents():
     )
     assert service_counts['lambda'] == len(original_table['lambda']._get_command_table())
     assert service_counts['s3'] == len(original_table['s3'].subcommand_table)
+
+
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.driver._get_command_table')
+def test_get_aws_api_documents_unknown_command_type(mock_get_command_table):
+    """Test handling of unknown command types."""
+    # Mock unknown command type
+    mock_unknown_command = MagicMock()
+
+    # Mock driver command table
+    mock_get_command_table.return_value = {'test-service': mock_unknown_command}
+
+    with patch('awslabs.aws_mcp_server.scripts.generate_embeddings.logger') as mock_logger:
+        documents = _get_aws_api_documents()
+
+        assert len(documents) == 0
+        mock_logger.warning.assert_called_once()
+
+
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.generate_embeddings')
+def test_main_default_args(mock_generate):
+    """Test main function with default arguments."""
+    with patch.object(sys, 'argv', ['generate_embeddings.py']):
+        main()
+        mock_generate.assert_called_once_with(
+            'BAAI/bge-base-en-v1.5', Path(DEFAULT_CACHE_DIR), False
+        )
+
+
+@patch('awslabs.aws_mcp_server.scripts.generate_embeddings.generate_embeddings')
+def test_main_custom_args(mock_generate):
+    """Test main function with custom arguments."""
+    with patch.object(
+        sys,
+        'argv',
+        [
+            'generate_embeddings.py',
+            '--model-name',
+            'custom-model',
+            '--cache-dir',
+            '/custom/cache',
+            '--overwrite',
+        ],
+    ):
+        main()
+        mock_generate.assert_called_once_with('custom-model', Path('/custom/cache'), True)

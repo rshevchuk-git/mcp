@@ -59,6 +59,11 @@ class DenseRetriever:
             self._model = SentenceTransformer(self.model_name)
         return self._model
 
+    @model.setter
+    def model(self, value):
+        """Set the model."""
+        self._model = value
+
     @property
     def index(self):
         """Return the FAISS index."""
@@ -71,6 +76,11 @@ class DenseRetriever:
             self._index.add(self.embeddings)  # type: ignore
         return self._index
 
+    @index.setter
+    def index(self, value):
+        """Set the index."""
+        self._index = value
+
     @property
     def documents(self):
         """Return the loaded documents."""
@@ -81,6 +91,11 @@ class DenseRetriever:
                 raise FileNotFoundError('No embeddings found for current awscli version')
         return self._documents
 
+    @documents.setter
+    def documents(self, value):
+        """Set the documents."""
+        self._documents = value
+
     @property
     def embeddings(self):
         """Return the loaded embeddings."""
@@ -90,6 +105,11 @@ class DenseRetriever:
             except FileNotFoundError:
                 raise FileNotFoundError('No embeddings found for current awscli version')
         return self._embeddings
+
+    @embeddings.setter
+    def embeddings(self, value):
+        """Set the embeddings."""
+        self._embeddings = value
 
     def get_cache_file_with_version(self):
         """Return cache file name with current awscli version."""

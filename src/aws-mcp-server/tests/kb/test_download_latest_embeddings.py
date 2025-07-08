@@ -266,21 +266,20 @@ def test_download_artifact_success(mock_file_open, mock_tar_open, mock_zip_file,
         'archive_download_url': 'https://api.github.com/repos/owner/repo/actions/artifacts/123/zip'
     }
 
-    with tempfile.TemporaryDirectory():
-        mock_tar_file = MagicMock()
-        mock_tar_file.name = 'artifact.tar.gz'
-        mock_extracted_dir = MagicMock()
-        mock_extracted_dir.is_dir.return_value = True
-        mock_extracted_dir.name = 'awslabs-mcp-server-123'
+    mock_tar_file = MagicMock()
+    mock_tar_file.name = 'artifact.tar.gz'
+    mock_extracted_dir = MagicMock()
+    mock_extracted_dir.is_dir.return_value = True
+    mock_extracted_dir.name = 'awslabs-mcp-server-123'
 
-        with (
-            patch.object(Path, 'glob', return_value=[mock_tar_file]),
-            patch.object(Path, 'iterdir', return_value=[mock_extracted_dir]),
-        ):
-            success, extracted_path = download_artifact(artifact)
+    with (
+        patch.object(Path, 'glob', return_value=[mock_tar_file]),
+        patch.object(Path, 'iterdir', return_value=[mock_extracted_dir]),
+    ):
+        success, extracted_path = download_artifact(artifact)
 
-        assert success is True
-        assert extracted_path is not None
+    assert success is True
+    assert extracted_path is not None
 
 
 @patch('awslabs.aws_mcp_server.scripts.download_latest_embeddings.subprocess.run')
@@ -429,37 +428,16 @@ def test_check_local_embeddings_found(mock_path):
     assert result is True
 
 
-@patch('awslabs.aws_mcp_server.scripts.download_latest_embeddings.Path')
-def test_check_local_embeddings_not_found(mock_path):
+def test_check_local_embeddings_not_found():
     """Test when local embeddings file is not found."""
-    # Create a mock that will be returned when Path is called
-    mock_path_instance = MagicMock()
-    mock_resolved = MagicMock()
-    mock_parent1 = MagicMock()
-    mock_parent2 = MagicMock()
-    mock_core = MagicMock()
-    mock_data = MagicMock()
-    mock_embeddings_dir = MagicMock()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        with patch('awslabs.aws_mcp_server.scripts.download_latest_embeddings.Path') as mock_path:
+            # Mock Path(__file__) to return our temp directory
+            mock_path.return_value = Path(temp_dir)
 
-    # Set up the chain: Path(__file__).resolve().parent.parent
-    mock_path_instance.resolve.return_value = mock_resolved
-    mock_resolved.parent = mock_parent1
-    mock_parent1.parent = mock_parent2
+            result = check_local_embeddings()
 
-    # Chain the / 'core' / 'data' / 'embeddings'
-    mock_parent2.__truediv__.return_value = mock_core
-    mock_core.__truediv__.return_value = mock_data
-    mock_data.__truediv__.return_value = mock_embeddings_dir
-
-    # Set up the embeddings dir mock
-    mock_embeddings_dir.exists.return_value = False
-
-    # Make Path constructor return our mock
-    mock_path.return_value = mock_path_instance
-
-    result = check_local_embeddings()
-
-    assert result is False
+            assert result is False
 
 
 @patch('awslabs.aws_mcp_server.scripts.download_latest_embeddings.subprocess.run')

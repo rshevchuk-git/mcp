@@ -55,9 +55,10 @@ def test_dense_retriever():
 
     suggestions = knowledge_base.get_suggestions('Describe my ec2 instances')
     suggested_commands = [s['command'] for s in suggestions['suggestions']]
-    print(suggested_commands)
 
-    assert len(suggested_commands) == DEFAULT_TOP_K
+    assert len(suggested_commands) == DEFAULT_TOP_K, (
+        f'Expected {DEFAULT_TOP_K} commands, got {len(suggested_commands)}: {suggested_commands}'
+    )
     assert 'aws ec2 describe-instances' in suggested_commands
 
 
@@ -117,8 +118,8 @@ def test_save_to_cache_success():
         rag = DenseRetriever(cache_dir=Path(temp_dir))
 
         # Mock embeddings and documents
-        rag._embeddings = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        rag._documents = [{'command': 'test1'}, {'command': 'test2'}]
+        rag.embeddings = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+        rag.documents = [{'command': 'test1'}, {'command': 'test2'}]
 
         # Save to cache
         rag.save_to_cache()
@@ -146,10 +147,10 @@ def test_generate_index():
 
     rag.generate_index(documents)
 
-    assert rag._documents == documents
-    assert rag._embeddings is not None
-    assert rag._embeddings.shape[0] == 2
-    assert rag._embeddings.shape[1] > 0
+    assert rag.documents == documents
+    assert rag.embeddings is not None
+    assert rag.embeddings.shape[0] == 2
+    assert rag.embeddings.shape[1] > 0
 
 
 @patch.object(DenseRetriever, 'documents', new_callable=PropertyMock, return_value=None)
@@ -160,14 +161,14 @@ def test_get_suggestions_without_documents(mock_documents):
     # Mock the model and index properly
     mock_model = MagicMock()
     mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3]]).astype('float32')
-    rag._model = mock_model
+    rag.model = mock_model
 
     mock_index = MagicMock()
     mock_index.search.return_value = (
         np.array([[0.9, 0.8, 0.7]]),  # distances
         np.array([[0, 1, 2]]),  # indices
     )
-    rag._index = mock_index
+    rag.index = mock_index
 
     with pytest.raises(ValueError, match='Documents are not loaded.'):
         rag.get_suggestions('test query')
@@ -178,14 +179,14 @@ def test_get_suggestions_success():
     rag = DenseRetriever(cache_dir=Path('/tmp'))
 
     # Mock documents and embeddings
-    rag._documents = [
+    rag.documents = [
         {'command': 'aws ec2 describe-instances', 'description': 'Describe EC2 instances'},
         {'command': 'aws s3 ls', 'description': 'List S3 buckets'},
         {'command': 'aws lambda list-functions', 'description': 'List Lambda functions'},
     ]
 
     # Create mock embeddings (3 documents, 384 dimensions like BAAI/bge-base-en-v1.5)
-    rag._embeddings = np.random.rand(3, 384).astype('float32')
+    rag.embeddings = np.random.rand(3, 384).astype('float32')
 
     # Mock the model encode method
     with patch.object(rag, '_model') as mock_model:
@@ -197,7 +198,7 @@ def test_get_suggestions_success():
             np.array([[0.9, 0.8, 0.7]]),  # distances
             np.array([[0, 1, 2]]),  # indices
         )
-        rag._index = mock_index
+        rag.index = mock_index
 
         # Test search
         suggestions = rag.get_suggestions('describe instances')
@@ -243,7 +244,7 @@ def test_index_property_lazy_loading():
     rag = DenseRetriever(cache_dir=Path('/tmp'))
 
     # Mock embeddings
-    rag._embeddings = np.random.rand(3, 384).astype('float32')
+    rag.embeddings = np.random.rand(3, 384).astype('float32')
 
     # Index should not be created initially
     assert rag._index is None
@@ -282,8 +283,8 @@ def test_load_from_cache_with_version_success():
         # Load from cache
         rag.load_from_cache_with_version()
 
-        assert rag._documents == mock_documents
-        np.testing.assert_array_equal(rag._embeddings, mock_embeddings)
+        assert rag.documents == mock_documents
+        np.testing.assert_array_equal(rag.embeddings, mock_embeddings)
 
 
 def test_get_suggestions_with_mock_model():
@@ -291,14 +292,14 @@ def test_get_suggestions_with_mock_model():
     rag = DenseRetriever(cache_dir=Path('/tmp'))
 
     # Mock documents and embeddings
-    rag._documents = [
+    rag.documents = [
         {'command': 'aws ec2 describe-instances', 'description': 'Describe EC2 instances'},
         {'command': 'aws s3 ls', 'description': 'List S3 buckets'},
         {'command': 'aws lambda list-functions', 'description': 'List Lambda functions'},
     ]
 
     # Create mock embeddings
-    rag._embeddings = np.random.rand(3, 384).astype('float32')
+    rag.embeddings = np.random.rand(3, 384).astype('float32')
 
     # Mock the model encode method
     with patch.object(rag, '_model') as mock_model:
@@ -310,7 +311,7 @@ def test_get_suggestions_with_mock_model():
             np.array([[0.9, 0.8, 0.7]]),  # distances
             np.array([[0, 1, 2]]),  # indices
         )
-        rag._index = mock_index
+        rag.index = mock_index
 
         # Test search
         suggestions = rag.get_suggestions('describe instances')

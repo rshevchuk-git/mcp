@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 from pathlib import Path
 from typing import Protocol
 
 from .dense_retriever import DenseRetriever
-from .operations_index import KeyWordSearch
 from awslabs.aws_mcp_server.scripts.download_latest_embeddings import (
     try_download_latest_embeddings,
 )
@@ -34,20 +32,15 @@ class KnowledgeBase:
     def trim_text(self, text: str, max_length: int) -> str:
         return f'{text[:max_length]}...' if len(text) > max_length else text
 
-    def setup(self, rag_type: str, **kwargs):
-        if rag_type == 'KEYWORD_SEARCH':
-            self.rag = KeyWordSearch()
-        elif rag_type == 'DENSE_RETRIEVER':
-            self.rag = DenseRetriever(**kwargs)
-            cache_file = self.rag.get_cache_file_with_version()
-            if not cache_file or not Path(cache_file).exists():
-                success = try_download_latest_embeddings()
-                if not success:
-                    raise FileNotFoundError(
-                        'No embeddings file found. You can generate them by running: python -m awslabs.aws_mcp_server.scripts.generate_embeddings'
-                    )
-        else:
-            raise ValueError(f'No such rag type found: {rag_type}')
+    def setup(self, **kwargs):
+        self.rag = DenseRetriever(**kwargs)
+        cache_file = self.rag.get_cache_file_with_version()
+        if not cache_file or not Path(cache_file).exists():
+            success = try_download_latest_embeddings()
+            if not success:
+                raise FileNotFoundError(
+                    'No embeddings file found. You can generate them by running: python -m awslabs.aws_mcp_server.scripts.generate_embeddings'
+                )
 
     def get_suggestions(self, query: str, **kwargs):
         if self.rag is None:

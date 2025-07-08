@@ -13,11 +13,7 @@
 # limitations under the License.
 
 import re
-from ..aws.services import driver
-from awscli.clidriver import ServiceCommand
-from botocore import xform_name
 from difflib import SequenceMatcher
-from typing import Any
 
 
 # Minimal stop words - keep domain-specific terms
@@ -125,90 +121,3 @@ def calculate_similarity(query: str, operation_description: str) -> float:
     final_score = (keyword_score * 0.5) + (sequence_score * 0.3) + (phrase_score * 0.2)
 
     return min(final_score, 1.0)
-
-
-def _get_all_aws_operations() -> list[dict[str, Any]]:
-    """Get all available AWS operations with CLI-style names."""
-    operations = []
-    command_table = driver._get_command_table()
-
-    def _to_cli_style(name: str) -> str:
-        return xform_name(name).replace('_', '-')
-
-    for service_name, command in command_table.items():
-        if not isinstance(command, ServiceCommand):
-            continue
-
-        try:
-            service_command_table = command._get_command_table()
-            for operation_name, operation in service_command_table.items():
-                if hasattr(operation, '_operation_model'):
-                    model = operation._operation_model
-                    description = []
-                    params = {}
-
-                    # Add documentation
-                    if clean_documentation := _clean_text(model.documentation):
-                        description.append(clean_documentation)
-
-                    # Add input parameters
-                    if input_shape := model.input_shape:
-                        for param_name, member in input_shape.members.items():
-                            key = f'{_to_cli_style(param_name)} ({member.type_name})'
-                            params[key] = (
-                                _clean_text(member.documentation)
-                                if hasattr(member, 'documentation')
-                                else 'No description'
-                            )
-                        if params:
-                            description.append('Parameters: ' + '; '.join(params.keys()))
-
-                    operations.append(
-                        {
-                            'service': service_name,
-                            'operation': operation_name,
-                            'parameters': params,
-                            'full_description': ' | '.join(description),
-                            'clean_description': clean_documentation,
-                        }
-                    )
-        except Exception:
-            continue
-
-    return operations
-
-
-class KeyWordSearch:
-    """Keyword search for AWS operations."""
-
-    def __init__(self):
-        """Initialize the keyword search for AWS operations."""
-        self.aws_operations_index = _get_all_aws_operations()
-
-    def get_suggestions(self, query: str, **kwargs) -> dict[str, list[dict]]:
-        """Get suggestions for AWS operations based on the query."""
-        scored_operations = []
-        for operation in self.aws_operations_index:
-            score = calculate_similarity(
-                query,
-                f'{operation["service"]} {operation["operation"]} {operation["full_description"]}',
-            )
-            if score > 0.2:
-                scored_operations.append((operation, score))
-
-        top_operations = sorted(scored_operations, key=lambda x: x[1], reverse=True)[:10]
-
-        # Format suggestions
-        suggestions = [
-            {
-                'command': f'aws {operation["service"]} {operation["operation"]}',
-                'similarity': round(score, 3),
-                'parameters': operation['parameters'],
-                'description': operation['clean_description'][:1000] + '...'
-                if len(operation['clean_description']) > 1000
-                else operation['clean_description'],
-            }
-            for operation, score in top_operations[:10]
-        ]
-
-        return {'suggestions': suggestions}

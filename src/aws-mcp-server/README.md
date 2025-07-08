@@ -90,7 +90,7 @@ Once configured, you can ask your AI assistant questions such as:
 - `call_aws`: Executes AWS CLI commands with validation and proper error handling
 - `suggest_aws_commands`: Suggests AWS CLI commands based on a natural language query. This tool is designed to support the model by suggesting the most likely CLI commands for the given task. It helps the model generate CLI commands by providing the complete set of parameters and looking up the most recent AWS CLI commands, some of which are yet unknown to the model.
   - We use a knowledge base built from the AWS CLI command table to power this tool. The system supports RAG (Retrieval-Augmented Generation) using a DenseRetriever.
-  - The DenseRetriever uses semantic embeddings with FAISS vector search and the SentenceTransformer model, requires generating embeddings during first-time use of this server.
+  - The DenseRetriever uses BAAI/bge-base-en-v1.5 embeddings model from SentenceTransformer library with FAISS vector search.
 
 
 ## Security Considerations

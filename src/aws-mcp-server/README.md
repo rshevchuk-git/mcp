@@ -9,71 +9,127 @@ This server bridges the gap between AI assistants and AWS services, allowing you
 
 ## Prerequisites
 - You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials\.html#configuring-credentials) for guidance. Note that this project follows boto3’s default credential selection order; if you have multiple AWS credentials on your machine, ensure the correct one is prioritized.
-- Install uv from [Astral](https://docs.astral.sh/uv/getting-started/installation/) or the [GitHub README](https://github.com/astral-sh/uv#installation)
-- Install Python 3.10 or newer using `uv python install 3.10` (or a more recent version)
+- Ensure you have Python 3.10 or newer installed. You can download it from the [official Python website](https://www.python.org/downloads/) or use a version manager such as [pyenv](https://github.com/pyenv/pyenv).
+- (Optional) Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for faster dependency management and improved Python environment handling.
 
 
-## Installation
-Get started with your favorite code assistant with MCP support, like Q CLI, Cursor or Cline.
+## 📦 Installation Methods
+
+Choose the installation method that best fits your workflow and get started with your favorite assistant with MCP support, like Q CLI, Cursor or Cline.
 
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-light.svg)](https://cursor.com/install-mcp?name=awslabs.aws-mcp-server&config=JTdCJTIyY29tbWFuZCUyMiUzQSUyMnV2eCUyMGF3c2xhYnMuYXdzLW1jcC1zZXJ2ZXIlNDBsYXRlc3QlMjIlMkMlMjJlbnYlMjIlM0ElN0IlMjJBV1NfUkVHSU9OJTIyJTNBJTIydXMtZWFzdC0xJTIyJTdEJTdE)
 
-Add the following code to your MCP client configuration (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`).
 
-For Linux/MacOS users:
 
+### 🐍 Using Python (pip)
+
+**Step 1: Install the package**
+```bash
+pip install awslabs.aws-mcp-server
 ```
-{
-  "mcpServers": {
-    "awslabs.aws-mcp-server": {
-      "command": "uvx",
-      "args": [
-        "awslabs.aws-mcp-server@latest"
-      ],
-      "env": {
-        "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-        "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
-        "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
-      },
-      "disabled": false,
-      "autoApprove": []
+
+**Step 2: Configure your MCP client**
+   
+   Add the following configuration to your MCP client config file (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`):
+
+   ```json
+   {
+      "mcpServers": {
+        "awslabs.aws-mcp-server": {
+          "command": "python",
+          "args": [
+            "awslabs.aws_mcp_server.server"
+          ],
+          "env": {
+            "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
+            "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
+            "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
+            "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
+          },
+          "disabled": false,
+          "autoApprove": []
+        }
+      }
     }
-  }
-}
-```
+   ```
+   > **⚠️ Important:** Remove all comments from your configuration file, otherwise it will not load properly.
 
-For Windows users:
-```
+### ⚡ Using uv (Recommended)
+
+**For Linux/MacOS users:**
+
+```json
 {
-  "mcpServers": {
-    "awslabs.aws-mcp-server": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "awslabs.aws-mcp-server@latest",
-        "awslabs.aws-mcp-server.exe"
-      ],
-      "env": {
-        "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-        "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
-        "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-        "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
-      },
-      "disabled": false,
-      "autoApprove": []
+      "mcpServers": {
+        "awslabs.aws-mcp-server": {
+          "command": "uvx",
+          "args": [
+            "awslabs.aws-mcp-server@latest"
+          ],
+          "env": {
+            "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
+            "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
+            "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
+            "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
+          },
+          "disabled": false,
+          "autoApprove": []
+        }
+      }
     }
-  }
-}
 ```
+> **⚠️ Important:** Remove all comments from your configuration file, otherwise it will not load properly.
 
-Remember to remove all comments when you finish configuration, otherwise the config file will not load properly.
+**For Windows users:**
+
+```json
+   {
+      "mcpServers": {
+        "awslabs.aws-mcp-server": {
+          "command": "uvx",
+          "args": [
+            "--from",
+            "awslabs.aws-mcp-server@latest",
+            "awslabs.aws-mcp-server.exe"
+          ],
+          "env": {
+            "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
+            "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
+            "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
+            "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
+          },
+          "disabled": false,
+          "autoApprove": []
+        }
+      }
+    }
+```
+> **⚠️ Important:** Remove all comments from your configuration file, otherwise it will not load properly.
+
+### 🔧 Using Cloned Repository
+
+For detailed instructions on setting up your local development environment and running the server from source, please see the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+
+
+
+## ⚙️ Configuration Options
+
+| Environment Variable | Required | Default | Description |
+|---------------------|----------|---------|-------------|
+| `AWS_REGION` | ✅ Yes | - | Default region for AWS CLI commands |
+| `AWS_PROFILE` | ❌ No | `"default"` | AWS Profile for credentials to use for command executions, 'default' will be used if not specified |
+| `READ_OPERATIONS_ONLY` | ❌ No | `"false"` | Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true". |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | ❌ No | - | Use environment variables to configure credentials, these take precedence over `AWS_PROFILE`, read more about boto3's default order of credential sources [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) |
+| `AWS_MCP_TELEMETRY` | ❌ No | `"false"` | Allow sending additional telemetry data to AWS related to the server configuration. This includes:<br> - call_aws() tool is used with `READ_OPERATIONS_ONLY` set to true or false |
+
+
+### 🚀 Quick Start
 
 Once configured, you can ask your AI assistant questions such as:
 
-- "List all my EC2 instances"
-- "Show me S3 buckets in us-west-2"
-- "Create a new security group for web servers" (Admin policy only)
+- **"List all my EC2 instances"**
+- **"Show me S3 buckets in us-west-2"**
+- **"Create a new security group for web servers"** *(Admin policy only)*
 
 
 ## Features
@@ -109,19 +165,6 @@ A few examples of commands which can write to the file system include:
 - `aws s3 sync`
 - `aws s3 cp`
 - Any AWS CLI command using the `outfile` positional argument
-
-## Environment variables
-#### Required
-- `AWS_REGION` (e.g. "eu-central-1"): Default region to be assumed when running AWS CLI commands
-
-
-#### Optional
-- `AWS_PROFILE` (string, default: "default"): AWS Profile for credentials to use for command executions, 'default' will be used if not specified
-- `READ_OPERATIONS_ONLY` (boolean, default: false): Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true".
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN`: Use environment variables to configure credentials, these take precedence over `AWS_PROFILE`, read more about boto3's default order of credential sources [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials)
-- `AWS_MCP_TELEMETRY` (boolean, default: false): Allow sending additional telemetry data to AWS related to the server configuration. These data include:
-  - call_aws() tool is used with `READ_OPERATIONS_ONLY` set to true or false
-
 
 ## License
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

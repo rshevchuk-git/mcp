@@ -29,7 +29,6 @@ pip install awslabs.aws-mcp-server
 ```
 
 **Step 2: Configure your MCP client**
-
    Add the following configuration to your MCP client config file (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`):
 
    ```json

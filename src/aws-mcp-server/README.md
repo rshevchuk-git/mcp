@@ -29,7 +29,7 @@ pip install awslabs.aws-mcp-server
 ```
 
 **Step 2: Configure your MCP client**
-   
+
    Add the following configuration to your MCP client config file (e.g., for Amazon Q Developer CLI, edit `~/.aws/amazonq/mcp.json`):
 
    ```json
@@ -41,10 +41,7 @@ pip install awslabs.aws-mcp-server
             "awslabs.aws_mcp_server.server"
           ],
           "env": {
-            "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-            "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
-            "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-            "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
+            "AWS_REGION": "us-east-1",
           },
           "disabled": false,
           "autoApprove": []
@@ -67,10 +64,7 @@ pip install awslabs.aws-mcp-server
             "awslabs.aws-mcp-server@latest"
           ],
           "env": {
-            "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-            "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
-            "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-            "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
+            "AWS_REGION": "us-east-1",
           },
           "disabled": false,
           "autoApprove": []
@@ -93,10 +87,7 @@ pip install awslabs.aws-mcp-server
             "awslabs.aws-mcp-server.exe"
           ],
           "env": {
-            "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
-            "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
-            "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
-            "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
+            "AWS_REGION": "us-east-1",
           },
           "disabled": false,
           "autoApprove": []

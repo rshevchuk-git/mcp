@@ -28,5 +28,4 @@ def get_env_bool(env_key: str, default: bool) -> bool:
 FASTMCP_LOG_LEVEL = os.getenv('FASTMCP_LOG_LEVEL', 'WARNING')
 DEFAULT_REGION = os.getenv('AWS_REGION')
 READ_OPERATIONS_ONLY_MODE = get_env_bool(READ_ONLY_KEY, False)
-RAG_TYPE = os.getenv('RAG_TYPE', 'DENSE_RETRIEVER')
 OPT_IN_TELEMETRY = get_env_bool(OPT_IN_TELEMETRY_KEY, False)

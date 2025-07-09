@@ -50,7 +50,7 @@ def test_dense_retriever():
     if not cache_file.exists():
         pytest.skip(f'Embeddings file not found: {cache_file}')
 
-    knowledge_base.setup(rag_type='DENSE_RETRIEVER')
+    knowledge_base.setup()
     assert isinstance(knowledge_base.rag, DenseRetriever)
 
     suggestions = knowledge_base.get_suggestions('Describe my ec2 instances')

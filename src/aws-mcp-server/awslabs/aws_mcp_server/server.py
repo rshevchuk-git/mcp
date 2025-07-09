@@ -24,7 +24,6 @@ from .core.aws.service import (
 from .core.common.config import (
     DEFAULT_REGION,
     FASTMCP_LOG_LEVEL,
-    RAG_TYPE,
     READ_ONLY_KEY,
     READ_OPERATIONS_ONLY_MODE,
 )
@@ -260,7 +259,7 @@ def main():
     logger.info('AWS_REGION: {}', DEFAULT_REGION)
 
     try:
-        knowledge_base.setup(rag_type=RAG_TYPE)
+        knowledge_base.setup()
     except Exception as e:
         error_message = f'[AWSMCP Error]: Error while setting up the knowledge base: {str(e)}'
         sys.stderr.write(error_message)

@@ -75,7 +75,7 @@ def sample_service_reference_response():
 def test_read_only_operations_initialization(
     mocked_requests_get, sample_service_reference_list_response
 ):
-    """Test ReadOnlyOperations initialization and version retrieval."""
+    """Test ReadOnlyOperations initialization."""
     mocked_service_reference_list_response = MagicMock(spec=Response)
     mocked_service_reference_list_response.json.return_value = (
         sample_service_reference_list_response
@@ -189,3 +189,11 @@ def test_service_reference_urls_by_service_error(mocked_requests_get):
     mocked_requests_get.assert_has_calls(
         [call(SERVICE_REFERENCE_URL, timeout=DEFAULT_REQUEST_TIMEOUT)], any_order=False
     )
+
+
+def test_read_only_operations_has_method_custom_operation():
+    """Test the has method of ReadOnlyOperations with custom operations."""
+    operations = ReadOnlyOperations({})
+    assert operations.has('s3', 'ls')
+    assert operations.has('logs', 'start-live-tail')
+    assert not operations.has('s3', 'sync')

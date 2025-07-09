@@ -88,10 +88,7 @@ Once configured, you can ask your AI assistant questions such as:
 
 ## Available MCP Tools
 - `call_aws`: Executes AWS CLI commands with validation and proper error handling
-- `suggest_aws_commands`: Suggests AWS CLI commands based on a natural language query. This tool is designed to support the model by suggesting the most likely CLI commands for the given task. It helps the model generate CLI commands by providing the complete set of parameters and looking up the most recent AWS CLI commands, some of which are yet unknown to the model.
-  - We use a knowledge base built from the AWS CLI command table to power this tool. The system supports two distinct RAG (Retrieval-Augmented Generation) approaches:
-  - 1. DenseRetriever: the default RAG, uses semantic embeddings with FAISS vector search and the SentenceTransformer model, requires generating embeddings during first-time use of this server.
-  - 2. KeywordSearch: uses deterministic keyword matching, phrase detection and SequenceMatcher's string similarity scoring.
+- `suggest_aws_commands`: Suggests AWS CLI commands based on a natural language query. This tool helps the model generate CLI commands by providing a description and the complete set of parameters for the 3 most likely CLI commands for the given query, including the most recent AWS CLI commands - some of which may be otherwise unknown to the model (released after the model's knowledge cut-off date). This enables RAG (Retrieval-Augmented Generation) for CLI command generation via the AWS CLI command table as the knowledge source, M3 text embedding model [Chen et al., Findings of ACL 2024] for representing query and CLI documents as dense vectors, and FAISS for nearest neighbour search.
 
 
 ## Security Considerations

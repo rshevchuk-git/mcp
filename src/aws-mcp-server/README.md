@@ -8,7 +8,8 @@ This server bridges the gap between AI assistants and AWS services, allowing you
 
 
 ## Prerequisites
-- You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials\.html#configuring-credentials) for guidance. Note that this project follows boto3’s default credential selection order; if you have multiple AWS credentials on your machine, ensure the correct one is prioritized.
+- You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) for guidance. We recommend configuring your credentials using the AWS_MCP_PROFILE_NAME environment variable (see "Environment Variables" section below for details). If
+AWS_MCP_PROFILE_NAME is not specified, the system follows boto3's default credential selection order, in this case, if you have multiple AWS profiles configured on your machine, ensure the correct profile is prioritized in your credential chain.
 - Install uv from [Astral](https://docs.astral.sh/uv/getting-started/installation/) or the [GitHub README](https://github.com/astral-sh/uv#installation)
 - Install Python 3.10 or newer using `uv python install 3.10` (or a more recent version)
 
@@ -33,7 +34,7 @@ For Linux/MacOS users:
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
         "AWS_MCP_WORKING_DIR": "/path/to/working/directory", // Required. Working directory for resolving relative paths in commands like 'aws s3 cp'.
-        "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
+        "AWS_MCP_PROFILE_NAME": "<your_profile_name>" // Optional. AWS Profile for credentials. Read more under "Environment variables".
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
       },
@@ -58,7 +59,7 @@ For Windows users:
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
         "AWS_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory", // Required. Working directory for resolving relative paths in commands like 'aws s3 cp'.
-        "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
+        "AWS_MCP_PROFILE_NAME": "<your_profile_name>" // Optional. AWS Profile for credentials. Read more under "Environment variables".
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
       },
@@ -119,9 +120,9 @@ A few examples of commands which can write to the file system include:
 
 
 #### Optional
-- `AWS_PROFILE` (string, default: "default"): AWS Profile for credentials to use for command executions, 'default' will be used if not specified
+- `AWS_MCP_PROFILE_NAME` (string): AWS Profile for credentials to use for command executions. If not provided, the MCP server will follow the boto3's [default credentials chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) to look for credentials. We strongly recommend you to configure your credentials this way.
 - `READ_OPERATIONS_ONLY` (boolean, default: false): Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true".
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN`: Use environment variables to configure credentials, these take precedence over `AWS_PROFILE`, read more about boto3's default order of credential sources [here](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials)
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_SESSION_TOKEN`: Use environment variables to configure credentials. However, we DO NOT recommend configuring your credentials this way because it's more cumbersome, it is better to use `AWS_MCP_PROFILE_NAME` mentioned above.
 - `AWS_MCP_TELEMETRY` (boolean, default: false): Allow sending additional telemetry data to AWS related to the server configuration. These data include:
   - call_aws() tool is used with `READ_OPERATIONS_ONLY` set to true or false
 

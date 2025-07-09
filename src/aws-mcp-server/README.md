@@ -96,12 +96,19 @@ We use credentials to control which commands this MCP server can execute. This M
 - Using credentials for an IAM role with `AdministratorAccess` policy (usually the `Admin` IAM role) permits mutating actions (i.e. creating, deleting, modifying your AWS resources) and non-mutating actions.
 - Using credentials for an IAM role with `ReadOnlyAccess` policy (usually the `ReadOnly` IAM role) only allows non-mutating actions, this is sufficient if you only want to inspect resources in your account.
 - If IAM roles are not available, [these alternatives](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html#cli-configure-files-examples) can also be used to configure credentials.
-- To add another layer of security, users can explicitly set the environment variable `READ_OPERATIONS_ONLY` to true in their MCP config file. When set to true, we'll compare each CLI command against a list of known read-only actions, and will only execute the command if it's found in the allowed list. "Read-Only" only refers to the API classification, not the file syste, that is such "read-only" actions can still write to the file system if necessary or upon user request. While this environment variable provides an additional layer of protection, IAM permissions remain the primary and most reliable security control. Users should always configure appropriate IAM roles and policies for their use case, as IAM credentials take precedence over this environment variable.
+- To add another layer of security, users can explicitly set the environment variable `READ_OPERATIONS_ONLY` to true in their MCP config file. When set to true, we'll compare each CLI command against a list of known read-only actions, and will only execute the command if it's found in the allowed list. "Read-Only" only refers to the API classification, not the file system, that is such "read-only" actions can still write to the file system if necessary or upon user request. While this environment variable provides an additional layer of protection, IAM permissions remain the primary and most reliable security control. Users should always configure appropriate IAM roles and policies for their use case, as IAM credentials take precedence over this environment variable.
 
 With all the security measures mentioned above, do understand that Large Langue Models (LLMs) are non-deterministic, and hallucinations can happen. It is your responsibility to use the best judgement on where to apply these tools. For example:
 - A user asks the client to "Clean up my old test databases that aren't being used anymore". The LLM might assume ALL databases with "test" in the name are safe to delete, hence calling
 `aws rds delete-db-instance --db-instance-identifier prod-test-analytics --region us-east-1 --skip-final-snapshot`. It fails to realize that "prod-test-analytics" was a production database used for testing analytics features. The deletion is irreversible and now the users loses all their data in that database.
 - A user asks the LLM to "Download form.template from myonly s3 bucket to ~/temp/tests.txt". The LLM might create a directory `~`, under which it creates another directory `temp` to hold the `test.txt` file, it fails to understand that `~` points to the user's home directory. It was not a breaking change, but the file was created in the wrong place and the user might not be aware of it.
+
+### File system operations
+While executing commands which write files to the filesystem, please be aware that existing files can be modified, overwritten or deleted without any additional user confirmation which may lead to data loss. Users are therefore advised to be cautious when using such commands and to use their best judgement to verify the parameters the commands are being executed with.
+A few examples of commands which can write to the file system include:
+- `aws s3 sync`
+- `aws s3 cp`
+- Any AWS CLI command using the `outfile` positional argument
 
 ## Environment variables
 #### Required

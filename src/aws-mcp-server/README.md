@@ -95,6 +95,7 @@ pip install awslabs.aws-mcp-server
           "autoApprove": []
         }
       }
+
     }
 ```
 
@@ -157,6 +158,7 @@ A few examples of commands which can write to the file system include:
 - `aws s3 sync`
 - `aws s3 cp`
 - Any AWS CLI command using the `outfile` positional argument
+
 
 ## License
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

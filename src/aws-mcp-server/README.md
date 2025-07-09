@@ -32,6 +32,7 @@ For Linux/MacOS users:
       ],
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
+        "AWS_MCP_WORKING_DIR": "/path/to/working/directory", // Required. Working directory for resolving relative paths in commands like 'aws s3 cp'.
         "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
@@ -56,6 +57,7 @@ For Windows users:
       ],
       "env": {
         "AWS_REGION": "us-east-1", // Required. Set your default region to be assumed for CLI commands, if not specified explicitly in the request.
+        "AWS_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory", // Required. Working directory for resolving relative paths in commands like 'aws s3 cp'.
         "AWS_PROFILE": "default", // Optional. AWS Profile for credentials, 'default' will be used if not specified.
         "READ_OPERATIONS_ONLY": "false", // Optional. Only allows read-only operations as per ReadOnlyAccess policy. Default is "false"
         "AWS_MCP_TELEMETRY": "false" // Optional. Allow the storage of telemetry data. Default is "false". Read more under "Environment variables".
@@ -113,6 +115,7 @@ A few examples of commands which can write to the file system include:
 ## Environment variables
 #### Required
 - `AWS_REGION` (e.g. "eu-central-1"): Default region to be assumed when running AWS CLI commands
+- `AWS_MCP_WORKING_DIR` (string): Working directory path for the MCP server operations. Must be an absolute path. Used to resolve relative paths in commands like `aws s3 cp`
 
 
 #### Optional

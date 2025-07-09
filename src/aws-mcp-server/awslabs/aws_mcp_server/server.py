@@ -269,3 +269,7 @@ def main():
         READ_OPERATIONS_INDEX = get_read_only_operations()
 
     server.run(transport='stdio')
+
+
+if __name__ == '__main__':
+    main()

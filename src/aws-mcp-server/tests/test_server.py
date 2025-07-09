@@ -1,4 +1,3 @@
-import os
 import pytest
 from awslabs.aws_mcp_server.core.common.errors import AwsMcpError
 from awslabs.aws_mcp_server.core.common.models import (
@@ -571,11 +570,23 @@ async def test_call_aws_awscli_customization_error(
     mock_get_creds.assert_called_once()
 
 
-@patch.dict(os.environ, {}, clear=True)
+@patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', None)
+@patch('awslabs.aws_mcp_server.server.WORKING_DIRECTORY', '/tmp')
 def test_main_missing_aws_region():
     """Test main function raises ValueError when AWS_REGION environment variable is not set."""
     with pytest.raises(
         ValueError, match=r'\[AWSMCP Error\]: AWS_REGION environment variable is not defined.'
+    ):
+        main()
+
+
+@patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', 'us-east-1')
+@patch('awslabs.aws_mcp_server.server.WORKING_DIRECTORY', None)
+def test_main_missing_working_directory():
+    """Test main function raises ValueError when AWS_MCP_WORKING_DIR environment variable is not set."""
+    with pytest.raises(
+        ValueError,
+        match=r'\[AWSMCP Error\]: AWS_MCP_WORKING_DIR environment variable is not defined.',
     ):
         main()
 
@@ -585,6 +596,7 @@ def test_main_missing_aws_region():
 @patch('awslabs.aws_mcp_server.server.knowledge_base')
 @patch('awslabs.aws_mcp_server.server.READ_OPERATIONS_ONLY_MODE', True)
 @patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', 'us-east-1')
+@patch('awslabs.aws_mcp_server.server.WORKING_DIRECTORY', '/tmp')
 def test_main_success_with_read_only_mode(
     mock_knowledge_base,
     mock_get_read_only_operations,

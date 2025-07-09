@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 from .core.aws.driver import translate_cli_to_ir
 from .core.aws.service import (
@@ -26,6 +27,7 @@ from .core.common.config import (
     FASTMCP_LOG_LEVEL,
     READ_ONLY_KEY,
     READ_OPERATIONS_ONLY_MODE,
+    WORKING_DIRECTORY,
 )
 from .core.common.errors import AwsMcpError
 from .core.common.models import (
@@ -251,8 +253,18 @@ def main():
     """Main entry point for the AWS MCP server."""
     global READ_OPERATIONS_INDEX
 
+    if not WORKING_DIRECTORY:
+        error_message = (
+            '[AWSMCP Error]: AWS_MCP_WORKING_DIR environment variable is not defined.\n'
+        )
+        sys.stderr.write(error_message)
+        raise ValueError(error_message)
+
+    os.chdir(WORKING_DIRECTORY)
+    logger.info(f'CWD: {os.getcwd()}')
+
     if DEFAULT_REGION is None:
-        error_message = '[AWSMCP Error]: AWS_REGION environment variable is not defined.'
+        error_message = '[AWSMCP Error]: AWS_REGION environment variable is not defined.\n'
         sys.stderr.write(error_message)
         raise ValueError(error_message)
 

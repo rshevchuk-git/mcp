@@ -15,6 +15,7 @@
 import boto3
 import contextlib
 from ..aws.services import driver
+from ..common.config import AWS_MCP_PROFILE_NAME
 from ..common.errors import Failure
 from ..common.models import (
     AwsCliAliasResponse,
@@ -43,13 +44,22 @@ from typing import Any
 
 def get_local_credentials() -> Credentials:
     """Get the local credentials for AWS profile."""
-    session = boto3.Session()
+    if AWS_MCP_PROFILE_NAME is not None:
+        session = boto3.Session(profile_name=AWS_MCP_PROFILE_NAME)
+    else:
+        session = boto3.Session()
     aws_creds = session.get_credentials()
 
     if aws_creds is None:
         raise NoCredentialsError()
 
-    logger.info(f'Found credentials in {aws_creds.method}.')  # logging the source of credentials
+    creds_source = (
+        aws_creds.method if AWS_MCP_PROFILE_NAME is None else f'{AWS_MCP_PROFILE_NAME} profile'
+    )
+    logger.info(
+        f'AWS credentials successfully resolved using: {creds_source}.'
+    )  # logging the source of credentials
+
     return Credentials(
         access_key_id=aws_creds.access_key,
         secret_access_key=aws_creds.secret_key,

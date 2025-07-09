@@ -43,10 +43,16 @@ class ReadOnlyOperations(dict):
         """Initialize the read only operations list."""
         super().__init__()
         self._service_reference_urls_by_service = service_reference_urls_by_service
+        self._custom_readonly_operations = self._get_custom_readonly_operations()
 
     def has(self, service, operation) -> bool:
         """Check if the operation is in the read only operations list."""
         logger.info(f'checking in read only list : {service} - {operation}')
+        if (
+            service in self._custom_readonly_operations
+            and operation in self._custom_readonly_operations[service]
+        ):
+            return True
         if service not in self:
             if service not in self._service_reference_urls_by_service:
                 return False
@@ -65,6 +71,24 @@ class ReadOnlyOperations(dict):
         for action in response['Actions']:
             if not action['Annotations']['Properties']['IsWrite']:
                 self[service].append(action['Name'])
+
+    def _get_custom_readonly_operations(self) -> dict:
+        return {
+            's3': ['ls', 'presign'],
+            'cloudfront': ['sign'],
+            'cloudtrail': ['validate-logs'],
+            'codeartifact': ['login'],
+            'codecommit': ['credential-helper'],
+            'datapipeline': ['list-runs'],
+            'ecr': ['get-login', 'get-login-password'],
+            'ecr-public': ['get-login-password'],
+            'eks': ['update-kubeconfig', 'get-token'],
+            'emr': ['describe-cluster'],
+            'gamelist': ['get-game-session-log'],
+            'logs': ['start-live-tail'],
+            'rds': ['generate-db-auth-token'],
+            'configservice': ['get-status'],
+        }
 
 
 def get_read_only_operations() -> ReadOnlyOperations:

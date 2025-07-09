@@ -591,6 +591,18 @@ def test_main_missing_working_directory():
         main()
 
 
+@patch('awslabs.aws_mcp_server.server.DEFAULT_REGION', 'us-east-1')
+@patch('awslabs.aws_mcp_server.server.WORKING_DIRECTORY', 'relative/path')
+def test_main_relative_working_directory():
+    """Test main function raises ValueError when AWS_MCP_WORKING_DIR is a relative path."""
+    with pytest.raises(
+        ValueError,
+        match=r'\[AWSMCP Error\]: AWS_MCP_WORKING_DIR must be an absolute path.',
+    ):
+        main()
+
+
+@patch('awslabs.aws_mcp_server.server.os.chdir')
 @patch('awslabs.aws_mcp_server.server.server')
 @patch('awslabs.aws_mcp_server.server.get_read_only_operations')
 @patch('awslabs.aws_mcp_server.server.knowledge_base')
@@ -601,6 +613,7 @@ def test_main_success_with_read_only_mode(
     mock_knowledge_base,
     mock_get_read_only_operations,
     mock_server,
+    mock_chdir,
 ):
     """Test main function executes successfully with read-only mode enabled."""
     mock_knowledge_base.setup = MagicMock()
@@ -610,6 +623,7 @@ def test_main_success_with_read_only_mode(
 
     main()
 
+    mock_chdir.assert_called_once_with('/tmp')
     mock_knowledge_base.setup.assert_called_once()
     mock_get_read_only_operations.assert_called_once()
     mock_server.run.assert_called_once_with(transport='stdio')

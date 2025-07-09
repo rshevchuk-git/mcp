@@ -260,6 +260,11 @@ def main():
         sys.stderr.write(error_message)
         raise ValueError(error_message)
 
+    if not os.path.isabs(WORKING_DIRECTORY):
+        error_message = '[AWSMCP Error]: AWS_MCP_WORKING_DIR must be an absolute path.\n'
+        sys.stderr.write(error_message)
+        raise ValueError(error_message)
+
     os.chdir(WORKING_DIRECTORY)
     logger.info(f'CWD: {os.getcwd()}')
 

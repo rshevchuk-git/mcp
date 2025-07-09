@@ -115,7 +115,7 @@ A few examples of commands which can write to the file system include:
 ## Environment variables
 #### Required
 - `AWS_REGION` (e.g. "eu-central-1"): Default region to be assumed when running AWS CLI commands
-- `AWS_MCP_WORKING_DIR` (string): Working directory path for the MCP server operations. Used to resolve relative paths in commands like `aws s3 cp`
+- `AWS_MCP_WORKING_DIR` (string): Working directory path for the MCP server operations. Must be an absolute path. Used to resolve relative paths in commands like `aws s3 cp`
 
 
 #### Optional

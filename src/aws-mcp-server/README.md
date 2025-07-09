@@ -8,7 +8,8 @@ This server bridges the gap between AI assistants and AWS services, allowing you
 
 
 ## Prerequisites
-- You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials\.html#configuring-credentials) for guidance. Note that this project follows boto3’s default credential selection order; if you have multiple AWS credentials on your machine, ensure the correct one is prioritized.
+- You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) for guidance. We recommend configuring your credentials using the `AWS_MCP_PROFILE_NAME` environment variable (see "Environment Variables" section below for details). If
+`AWS_MCP_PROFILE_NAME` is not specified, the system follows boto3's default credential selection order, in this case, if you have multiple AWS profiles configured on your machine, ensure the correct profile is prioritized in your credential chain.
 - Ensure you have Python 3.10 or newer installed. You can download it from the [official Python website](https://www.python.org/downloads/) or use a version manager such as [pyenv](https://github.com/pyenv/pyenv).
 - (Optional) Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for faster dependency management and improved Python environment handling.
 
@@ -37,10 +38,12 @@ pip install awslabs.aws-mcp-server
         "awslabs.aws-mcp-server": {
           "command": "python",
           "args": [
+            "-m",
             "awslabs.aws_mcp_server.server"
           ],
           "env": {
             "AWS_REGION": "us-east-1",
+            "AWS_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory"
           },
           "disabled": false,
           "autoApprove": []
@@ -48,9 +51,8 @@ pip install awslabs.aws-mcp-server
       }
     }
    ```
-   > **⚠️ Important:** Remove all comments from your configuration file, otherwise it will not load properly.
 
-### ⚡ Using uv (Recommended)
+### ⚡ Using uv
 
 **For Linux/MacOS users:**
 
@@ -64,6 +66,7 @@ pip install awslabs.aws-mcp-server
           ],
           "env": {
             "AWS_REGION": "us-east-1",
+            "AWS_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory"
           },
           "disabled": false,
           "autoApprove": []
@@ -71,7 +74,6 @@ pip install awslabs.aws-mcp-server
       }
     }
 ```
-> **⚠️ Important:** Remove all comments from your configuration file, otherwise it will not load properly.
 
 **For Windows users:**
 
@@ -87,6 +89,7 @@ pip install awslabs.aws-mcp-server
           ],
           "env": {
             "AWS_REGION": "us-east-1",
+            "AWS_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory"
           },
           "disabled": false,
           "autoApprove": []
@@ -94,7 +97,6 @@ pip install awslabs.aws-mcp-server
       }
     }
 ```
-> **⚠️ Important:** Remove all comments from your configuration file, otherwise it will not load properly.
 
 ### 🔧 Using Cloned Repository
 

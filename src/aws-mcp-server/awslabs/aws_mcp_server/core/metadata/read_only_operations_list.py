@@ -43,14 +43,14 @@ class ReadOnlyOperations(dict):
         """Initialize the read only operations list."""
         super().__init__()
         self._service_reference_urls_by_service = service_reference_urls_by_service
-        self.custom_readonly_commands = self._get_custom_readonly_commands()
+        self._custom_readonly_operations = self._get_custom_readonly_operations()
 
     def has(self, service, operation) -> bool:
         """Check if the operation is in the read only operations list."""
         logger.info(f'checking in read only list : {service} - {operation}')
         if (
-            service in self.custom_readonly_commands
-            and operation in self.custom_readonly_commands[service]
+            service in self._custom_readonly_operations
+            and operation in self._custom_readonly_operations[service]
         ):
             return True
         if service not in self:
@@ -72,7 +72,7 @@ class ReadOnlyOperations(dict):
             if not action['Annotations']['Properties']['IsWrite']:
                 self[service].append(action['Name'])
 
-    def _get_custom_readonly_commands(self) -> dict:
+    def _get_custom_readonly_operations(self) -> dict:
         return {
             's3': ['ls', 'presign'],
             'cloudfront': ['sign'],

@@ -191,8 +191,8 @@ def test_service_reference_urls_by_service_error(mocked_requests_get):
     )
 
 
-def test_read_only_operations_has_method_custom_command():
-    """Test the has method of ReadOnlyOperations with custom commands."""
+def test_read_only_operations_has_method_custom_operation():
+    """Test the has method of ReadOnlyOperations with custom operations."""
     operations = ReadOnlyOperations({})
     assert operations.has('s3', 'ls')
     assert operations.has('logs', 'start-live-tail')

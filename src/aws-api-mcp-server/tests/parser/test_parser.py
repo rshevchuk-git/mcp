@@ -276,7 +276,7 @@ def test_expected_required_argument(command, message):
 @pytest.mark.parametrize(
     'command',
     [
-        "aws apigateway get-export --parameters extensions='postman' --rest-api-id a1b2c3d4e5 --stage-name dev --export-type swagger outfile",
+        "aws apigateway get-export --parameters extensions='postman' --rest-api-id a1b2c3d4e5 --stage-name dev --export-type swagger -",
     ],
 )
 def test_does_not_crash_on_parameter_without_value(command):
@@ -396,16 +396,12 @@ def test_plural_singular_params(command):
 @pytest.mark.parametrize(
     'command',
     [
-        (
-            'aws s3api get-bucket-location --bucket=deploymentloggingbucke-9c88ebe0707be65d2518510c64917283d761bf03'
-        ),
-        (
-            "aws ec2 describe-availability-zones --query='AvailabilityZones[?ZoneName==`us-east-1a`]'"
-        ),
-        ('aws s3api get-bucket-lifecycle --bucket my-s3-bucket'),
-        (
-            'aws --region=us-east-1 ec2 get-subnet-cidr-reservations --subnet-id subnet-012 --color=on'
-        ),
+        'aws s3api get-bucket-location --bucket=deploymentloggingbucke-9c88ebe0707be65d2518510c64917283d761bf03',
+        "aws ec2 describe-availability-zones --query='AvailabilityZones[?ZoneName==`us-east-1a`]'",
+        'aws s3api get-bucket-lifecycle --bucket my-s3-bucket',
+        'aws --region=us-east-1 ec2 get-subnet-cidr-reservations --subnet-id subnet-012 --color=on',
+        'aws s3api get-object --bucket aws-sam-cli-managed-default-samclisourcebucket --key lambda-sqs-sam-test-1/1f1a15295b5529effed491b54a5b5b83.template -',
+        "aws apigateway get-export --parameters extensions='postman' --rest-api-id a1b2c3d4e5 --stage-name dev --export-type swagger -",
     ],
 )
 def test_should_pass_for_valid_equal_sign_params(command):
@@ -594,5 +590,21 @@ def test_client_side_filter_error():
     command = 'aws ec2 describe-instances --query "Reservations[[]"'
     with pytest.raises(
         ClientSideFilterError, match="Error parsing client-side filter 'Reservations[[]'*"
+    ):
+        parse(command)
+
+
+@pytest.mark.parametrize(
+    'command',
+    [
+        'aws s3api get-object --bucket aws-sam-cli-managed-default-samclisourcebucket --key lambda-sqs-sam-test-1/1f1a15295b5529effed491b54a5b5b83.template myfile.template',
+        'aws lambda invoke --function-name my-function response.json',
+    ],
+)
+def test_outfile_parameter_not_supported(command):
+    """Test that outfile parameters raise a validation error."""
+    with pytest.raises(
+        CommandValidationError,
+        match='Output file parameters are not supported yet. Use - as the output file to get the requested data in the response.',
     ):
         parse(command)

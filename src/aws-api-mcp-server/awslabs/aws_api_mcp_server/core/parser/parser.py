@@ -39,6 +39,7 @@ from ..common.errors import (
     MissingOperationError,
     MissingRequiredParametersError,
     MisspelledParametersError,
+    OperationNotAllowedError,
     ParameterSchemaValidationError,
     ParameterValidationErrorRecord,
     RequestSerializationError,
@@ -72,6 +73,46 @@ ARN_PATTERN = re.compile(
 # They are not ServiceCommand instances. The other example of a non-ServiceCommand
 # is the fake "s3" service, which is handled properly.
 DENIED_CUSTOM_SERVICES = frozenset({'configure', 'history'})
+
+# These are the custom operations for `aws` services in CLI which are known
+# to not do any subprocess calls and are therefore allowed.
+ALLOWED_CUSTOM_OPERATIONS = {
+    # blanket allow these custom operation regardless of service
+    '*': ['wait'],
+    's3': ['ls', 'website', 'sync', 'cp', 'mv', 'rm', 'mb', 'rb', 'presign'],
+    'cloudformation': ['package', 'deploy'],
+    'cloudfront': ['sign'],
+    'cloudtrail': ['create-subscription', 'update-subscription', 'validate-logs'],
+    'codeartifact': ['login'],
+    'codecommit': ['credential-helper'],
+    'datapipeline': ['list-runs', 'create-default-roles'],
+    'dlm': ['create-default-role'],
+    'ecr': ['get-login', 'get-login-password'],
+    'ecr-public': ['get-login-password'],
+    'ecs': ['deploy'],
+    'eks': ['update-kubeconfig', 'get-token'],
+    'emr': [
+        'add-instance-groups',
+        'describe-cluster',
+        'terminate-cluster',
+        'modify-cluster-attributes',
+        'install-applications',
+        'create-cluster',
+        'add-steps',
+        'restore-from-hbase-backup',
+        'create-hbase-backup',
+        'schedule-hbase-backup',
+        'disable-hbase-backup',
+        'create-default-roles',
+    ],
+    'emr-containers': ['update-role-trust-policy'],
+    'gamelift': ['upload-build', 'get-game-session-log'],
+    'logs': ['start-live-tail'],
+    'rds': ['generate-db-auth-token'],
+    'servicecatalog': ['generate'],
+    'deploy': ['push', 'register', 'deregister'],
+    'configservice': ['subscribe', 'get-status'],
+}
 
 _excluded_optional_params = frozenset(
     {
@@ -250,6 +291,43 @@ class GlobalArgParser(MainArgParser):
         _on_error_in_argparse(message)
 
 
+def is_custom_operation(service, operation):
+    """Returns true if the service operation is cli customization."""
+    service_command = command_table.get(service, None)
+    if not service_command:
+        raise InvalidServiceError(service)
+
+    if isinstance(service_command, ServiceCommand):
+        # valid service, unlike s3
+        service_command_table = service_command._get_command_table()
+        operation_command = service_command_table.get(operation)
+
+        # valid service can have custom operations.
+        # custom operations don't have _operation_model
+        if hasattr(operation_command, '_operation_model'):
+            return False
+
+    return True
+
+
+def is_denied_custom_service(service):
+    """Returns true if the service is a cli customization that is explicitely denied."""
+    return service in DENIED_CUSTOM_SERVICES
+
+
+def is_denied_custom_operation(service, operation):
+    """Check if a service operation is custom and denied."""
+    if not is_custom_operation(service, operation):
+        return False
+
+    if operation in ALLOWED_CUSTOM_OPERATIONS['*']:
+        return False
+
+    return not (
+        service in ALLOWED_CUSTOM_OPERATIONS and operation in ALLOWED_CUSTOM_OPERATIONS[service]
+    )
+
+
 command_table = driver._get_command_table()
 cli_data = driver._get_cli_data()
 parser = GlobalArgParser.get_parser()
@@ -367,7 +445,7 @@ def _handle_awscli_customization(
     service_command = command_table.get(service)
 
     if service_command is None:
-        raise InvalidServiceOperationError(service, operation)
+        raise InvalidServiceError(service)
 
     # For custom commands, we need to check if the operation exists in the service's command table
     if hasattr(service_command, '_get_command_table'):
@@ -382,6 +460,9 @@ def _handle_awscli_customization(
 
     if not operation_command:
         raise InvalidServiceOperationError(service, operation)
+
+    if is_denied_custom_operation(service, operation):
+        raise OperationNotAllowedError(service, operation)
 
     if not hasattr(operation_command, '_operation_model'):
         return _validate_customization_arguments(

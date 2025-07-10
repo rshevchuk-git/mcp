@@ -22,7 +22,10 @@ from ..core.kb.dense_retriever import (
     KNOWLEDGE_BASE_SUFFIX,
     DenseRetriever,
 )
-from ..core.parser.parser import DENIED_CUSTOM_SERVICES
+from ..core.parser.parser import (
+    DENIED_CUSTOM_SERVICES,
+    is_denied_custom_operation,
+)
 from awscli.bcdoc.restdoc import ReSTDocument
 from awscli.clidriver import ServiceCommand
 from awscli.clidriver import __version__ as awscli_version
@@ -101,6 +104,10 @@ def _get_aws_api_documents() -> list[dict[str, Any]]:
                 continue
 
             for operation_name, operation in command_table.items():
+                if is_denied_custom_operation(service_name, operation_name):
+                    # skip so we don't suggest these and later fail to execute
+                    continue
+
                 documents.append(
                     _generate_operation_document(service_name, operation_name, operation)
                 )

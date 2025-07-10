@@ -3,8 +3,62 @@ from awslabs.aws_api_mcp_server.core.common.command import IRCommand
 from awslabs.aws_api_mcp_server.core.common.errors import (
     InvalidServiceOperationError,
     MissingRequiredParametersError,
+    OperationNotAllowedError,
 )
-from awslabs.aws_api_mcp_server.core.parser.parser import parse
+from awslabs.aws_api_mcp_server.core.parser.parser import (
+    ALLOWED_CUSTOM_OPERATIONS,
+    is_custom_operation,
+    is_denied_custom_operation,
+    parse,
+)
+
+
+def test_wait_is_custom_operation():
+    """Test if wait is classified as custom operation."""
+    assert is_custom_operation('s3api', 'wait')
+
+
+def test_custom_operation_is_detected():
+    """Test a custom operation is detected as such."""
+    for service, operations in ALLOWED_CUSTOM_OPERATIONS.items():
+        if service == '*':
+            continue
+        for operation in operations:
+            assert is_custom_operation(service, operation), (
+                f'is_custom_operation incorrectly false for {service} {operation}'
+            )
+
+
+def test_s3api_list_buckets_not_custom():
+    """Test non-custom operation returns false."""
+    assert not is_custom_operation('s3api', 'list-buckets')
+
+
+def test_non_custom_operation_not_denied():
+    """Test non-custom operation is never denied."""
+    assert not is_denied_custom_operation('s3api', 'list-buckets')
+
+
+def test_wait_allowed_for_all_custom_commands():
+    """Test non-custom operation is never denied."""
+    assert not is_denied_custom_operation('emr', 'wait')
+
+
+@pytest.mark.parametrize(
+    'service,operation',
+    [
+        ('emr', 'ssh'),
+        ('emr', 'sock'),
+        ('emr', 'get'),
+        ('emr', 'put'),
+        ('opsworks', 'register'),
+        ('deploy', 'install'),
+        ('deploy', 'uninstall'),
+    ],
+)
+def test_custom_command_not_in_allow_list_denied(service, operation):
+    """Test non-custom operation is never denied."""
+    assert is_denied_custom_operation(service, operation)
 
 
 # S3 Customization Tests
@@ -136,33 +190,40 @@ def test_configservice_get_status_with_region():
     assert result.region == 'us-east-1'
 
 
-# EMR Customization Tests
-def test_emr_ssh_no_args():
-    """Test aws emr ssh with no arguments (should fail with missing required params)."""
-    with pytest.raises(MissingRequiredParametersError) as exc_info:
+def test_custom_operation_not_in_allow_list_denied():
+    """Test operation not in allowlist fails with not allowed."""
+    with pytest.raises(OperationNotAllowedError) as exc_info:
         parse('aws emr ssh')
+
+    assert 'not allowed' in str(exc_info.value)
+
+
+# EMR Customization Tests
+def test_emr_describe_cluster_no_args():
+    """Test aws emr add-steps with no arguments (should fail with missing required params)."""
+    with pytest.raises(MissingRequiredParametersError) as exc_info:
+        parse('aws emr describe-cluster')
 
     assert 'cluster-id' in str(exc_info.value)
 
 
-def test_emr_ssh_with_cluster_id():
-    """Test aws emr ssh with cluster ID (should fail with missing required params)."""
+def test_emr_add_steps_with_cluster_id():
+    """Test aws emr add-steps with cluster ID (should fail with missing required params)."""
     with pytest.raises(MissingRequiredParametersError) as exc_info:
-        parse('aws emr ssh --cluster-id j-1234567890')
+        parse('aws emr add-steps --cluster-id j-1234567890')
 
-    assert 'key-pair-file' in str(exc_info.value)
+    assert 'steps' in str(exc_info.value)
 
 
-def test_emr_ssh_with_cluster_id_and_key():
-    """Test aws emr ssh with cluster ID and key pair."""
-    result = parse('aws emr ssh --cluster-id j-1234567890 --key-pair-file my-key')
+def test_emr_describe_cluster_with_cluster_id():
+    """Test aws emr describe-cluster with cluster ID."""
+    result = parse('aws emr describe-cluster --cluster-id j-1234567890')
 
     assert isinstance(result, IRCommand)
     assert result.command_metadata.service_sdk_name == 'emr'
-    assert result.command_metadata.operation_sdk_name == 'ssh'
+    assert result.command_metadata.operation_sdk_name == 'describe-cluster'
     assert result.is_awscli_customization is True
     assert result.parameters['--cluster-id'] == 'j-1234567890'
-    assert result.parameters['--key-pair-file'] == 'my-key'
 
 
 # RDS Customization Tests

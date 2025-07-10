@@ -292,6 +292,19 @@ def test_get_aws_api_documents():
     assert service_counts['s3'] == len(original_table['s3'].subcommand_table)
 
 
+def test_get_aws_api_documents_ignores_denied_custom_operations():
+    """Test _get_aws_api_documents."""
+    # Get original command table and filter to only emr
+    original_table = driver._get_command_table()
+    filtered_table = {k: v for k, v in original_table.items() if k in ['emr']}
+
+    with patch.object(driver, '_get_command_table', return_value=filtered_table):
+        documents = _get_aws_api_documents()
+
+    for doc in documents:
+        assert 'aws emr ssh' not in doc['command']
+
+
 @patch('awslabs.aws_api_mcp_server.scripts.generate_embeddings.driver._get_command_table')
 def test_get_aws_api_documents_unknown_command_type(mock_get_command_table):
     """Test handling of unknown command types."""

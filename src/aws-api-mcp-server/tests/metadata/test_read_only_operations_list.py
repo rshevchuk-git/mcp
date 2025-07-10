@@ -197,3 +197,14 @@ def test_read_only_operations_has_method_custom_operation():
     assert operations.has('s3', 'ls')
     assert operations.has('logs', 'start-live-tail')
     assert not operations.has('s3', 'sync')
+
+
+def test_read_only_operations_has_method_operation_from_metadata():
+    """Test the has method of ReadOnlyOperations with operations defined in api metadata."""
+    operations = ReadOnlyOperations({})
+    assert operations.has('s3', 'ListBuckets')
+    assert operations.has('lambda', 'ListAliases')
+    assert operations.has('rds', 'DescribeDBSnapshotAttributes')
+    assert not operations.has('s3', 'DeleteObject')
+    assert not operations.has('lambda', 'CreateAlias')
+    assert not operations.has('rds', 'CreateDBSecurityGroup')

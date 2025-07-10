@@ -27,7 +27,7 @@ Model Context Protocol (MCP) server for interacting with AWS services and resour
 - Help in AWS CLI command selection
 - Access to latest AWS API features and services beyond LLM knowledge cutoff dates
 
-[Learn more about the aws MCP Server](servers/aws-mcp-server.md)
+[Learn more about the AWS API MCP Server](servers/aws-api-mcp-server.md)
 
 ### AWS Documentation MCP Server
 

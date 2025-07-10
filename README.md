@@ -106,7 +106,7 @@ MCP servers enhance the capabilities of foundation models (FMs) in several key w
 
 For general AWS interactions and comprehensive API support, we recommend starting with:
 
-- **[AWS MCP Server](src/aws-mcp-server)** - **Start here for general AWS interactions!** Comprehensive AWS API support with command validation, security controls, and access to all AWS services. Perfect for managing infrastructure, exploring resources, and executing AWS operations through natural language.
+- **[AWS API MCP Server](src/aws-api-mcp-server)** - **Start here for general AWS interactions!** Comprehensive AWS API support with command validation, security controls, and access to all AWS services. Perfect for managing infrastructure, exploring resources, and executing AWS operations through natural language.
 
 ### Browse by What You're Building
 

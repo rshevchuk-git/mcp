@@ -160,7 +160,7 @@ def test_get_suggestions_without_documents(mock_documents):
 
     # Mock the model and index properly
     mock_model = MagicMock()
-    mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3]]).astype('float32')
+    mock_model.encode.return_value = np.random.rand(1, 384).astype('float32')
     rag.model = mock_model
 
     mock_index = MagicMock()
@@ -183,20 +183,22 @@ def test_get_suggestions_success():
         {'command': 'aws ec2 describe-instances', 'description': 'Describe EC2 instances'},
         {'command': 'aws s3 ls', 'description': 'List S3 buckets'},
         {'command': 'aws lambda list-functions', 'description': 'List Lambda functions'},
+        {'command': 'aws logs describe-log-groups', 'description': 'List log groups'},
+        {'command': 'aws sts get-caller-identity', 'description': 'Show current identity'},
     ]
 
     # Create mock embeddings (3 documents, 384 dimensions like BAAI/bge-base-en-v1.5)
-    rag.embeddings = np.random.rand(3, 384).astype('float32')
+    rag.embeddings = np.random.rand(5, 384).astype('float32')
 
     # Mock the model encode method
     with patch.object(rag, '_model') as mock_model:
-        mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3]]).astype('float32')
+        mock_model.encode.return_value = np.random.rand(1, 384).astype('float32')
 
         # Mock the index directly
         mock_index = MagicMock()
         mock_index.search.return_value = (
-            np.array([[0.9, 0.8, 0.7]]),  # distances
-            np.array([[0, 1, 2]]),  # indices
+            np.array([[0.9, 0.8, 0.7, 0.6, 0.5]]),  # distances
+            np.array([[0, 1, 2, 3 ,4]]),  # indices
         )
         rag.index = mock_index
 
@@ -296,20 +298,22 @@ def test_get_suggestions_with_mock_model():
         {'command': 'aws ec2 describe-instances', 'description': 'Describe EC2 instances'},
         {'command': 'aws s3 ls', 'description': 'List S3 buckets'},
         {'command': 'aws lambda list-functions', 'description': 'List Lambda functions'},
+        {'command': 'aws logs describe-log-groups', 'description': 'List log groups'},
+        {'command': 'aws sts get-caller-identity', 'description': 'Show current identity'},
     ]
 
     # Create mock embeddings
-    rag.embeddings = np.random.rand(3, 384).astype('float32')
+    rag.embeddings = np.random.rand(5, 384).astype('float32')
 
     # Mock the model encode method
     with patch.object(rag, '_model') as mock_model:
-        mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3]]).astype('float32')
+        mock_model.encode.return_value = np.random.rand(1, 384).astype('float32')
 
         # Mock the index directly
         mock_index = MagicMock()
         mock_index.search.return_value = (
-            np.array([[0.9, 0.8, 0.7]]),  # distances
-            np.array([[0, 1, 2]]),  # indices
+            np.array([[0.9, 0.8, 0.7, 0.6, 0.5]]),  # distances
+            np.array([[0, 1, 2, 3 ,4]]),  # indices
         )
         rag.index = mock_index
 

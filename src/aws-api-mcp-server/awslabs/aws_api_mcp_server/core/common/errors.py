@@ -98,6 +98,41 @@ class InvalidChoiceForParameterError(CliParsingError):
         )
 
 
+class ServiceNotAllowedError(CliParsingError):
+    """Thrown when the given service name is explicitely not allowed."""
+
+    _message = 'The given service name is not allowed: {}'
+
+    def __init__(self, service: str):
+        """Initialize ServiceNotAllowedError with the service name."""
+        message = self._message.format(service)
+        self._service = service
+        super().__init__(message)
+
+    def as_failure(self) -> Failure:
+        """Return a Failure object representing this error."""
+        return Failure(reason=str(self), context={'service': self._service})
+
+
+class OperationNotAllowedError(CliParsingError):
+    """Thrown when the given operation for a service is explicitely not allowed."""
+
+    _message = 'The given operation is not allowed: {} {}'
+
+    def __init__(self, service: str, operation: str):
+        """Initialize OperationNotAllowedError with the service and operation name."""
+        message = self._message.format(service, operation)
+        self._service = service
+        self._operation = operation
+        super().__init__(message)
+
+    def as_failure(self) -> Failure:
+        """Return a Failure object representing this error."""
+        return Failure(
+            reason=str(self), context={'service': self._service, 'operation': self._operation}
+        )
+
+
 class InvalidServiceError(CliParsingError):
     """Thrown when the given service name does not exist."""
 

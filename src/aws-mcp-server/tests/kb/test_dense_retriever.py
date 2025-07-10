@@ -198,7 +198,7 @@ def test_get_suggestions_success():
         mock_index = MagicMock()
         mock_index.search.return_value = (
             np.array([[0.9, 0.8, 0.7, 0.6, 0.5]]),  # distances
-            np.array([[0, 1, 2, 3 ,4]]),  # indices
+            np.array([[0, 1, 2, 3, 4]]),  # indices
         )
         rag.index = mock_index
 
@@ -313,7 +313,7 @@ def test_get_suggestions_with_mock_model():
         mock_index = MagicMock()
         mock_index.search.return_value = (
             np.array([[0.9, 0.8, 0.7, 0.6, 0.5]]),  # distances
-            np.array([[0, 1, 2, 3 ,4]]),  # indices
+            np.array([[0, 1, 2, 3, 4]]),  # indices
         )
         rag.index = mock_index
 

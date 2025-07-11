@@ -100,7 +100,7 @@ pip install awslabs.aws-api-mcp-server
 
 ### 🔧 Using Cloned Repository
 
-For detailed instructions on setting up your local development environment and running the server from source, please see the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+For detailed instructions on setting up your local development environment and running the server from source, please see the CONTRIBUTING.md file.
 
 
 
@@ -113,7 +113,7 @@ For detailed instructions on setting up your local development environment and r
 | `AWS_API_MCP_PROFILE_NAME` | ❌ No | `"default"` | AWS Profile for credentials to use for command executions. If not provided, the MCP server will follow the boto3's [default credentials chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) to look for credentials. We strongly recommend you to configure your credentials this way. |
 | `READ_OPERATIONS_ONLY` | ❌ No | `"false"` | Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true". |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | ❌ No | - | Use environment variables to configure AWS credentials |
-| `AWS_API_MCP_TELEMETRY` | ❌ No | `"false"` | Allow sending additional telemetry data to AWS related to the server configuration. This includes:<br> - call_aws() tool is used with `READ_OPERATIONS_ONLY` set to true or false |
+| `AWS_API_MCP_TELEMETRY` | ❌ No | `"false"` | Allow sending additional telemetry data to AWS related to the server configuration. This includes:<br></br> - call_aws() tool is used with `READ_OPERATIONS_ONLY` set to true or false |
 
 
 ### 🚀 Quick Start
@@ -136,7 +136,7 @@ Once configured, you can ask your AI assistant questions such as:
 
 
 ## Available MCP Tools
-The tool names are subject to change, please refer to [CHANGELOG.md](CHANGELOG.md) for any changes and adapt your workflows accordingly.
+The tool names are subject to change, please refer to CHANGELOG.md for any changes and adapt your workflows accordingly.
 
 - `call_aws`: Executes AWS CLI commands with validation and proper error handling
 - `suggest_aws_commands`: Suggests AWS CLI commands based on a natural language query. This tool helps the model generate CLI commands by providing a description and the complete set of parameters for the 5 most likely CLI commands for the given query, including the most recent AWS CLI commands - some of which may be otherwise unknown to the model (released after the model's knowledge cut-off date). This enables RAG (Retrieval-Augmented Generation) for CLI command generation via the AWS CLI command table as the knowledge source, M3 text embedding model [Chen et al., Findings of ACL 2024] for representing query and CLI documents as dense vectors, and FAISS for nearest neighbour search.

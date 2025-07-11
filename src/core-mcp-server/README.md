@@ -1,13 +1,13 @@
 # Core MCP Server
 
 MCP server that provides a starting point for using the following awslabs MCP servers
-- [AWS API MCP Server](../aws-api-mcp-server)
-- [AWS CDK MCP Server](../cdk-mcp-server/)
-- [Amazon Bedrock Knowledge Bases Retrieval MCP Server](../bedrock-kb-retrieval-mcp-server/)
-- [Amazon Nova Canvas MCP Server](../nova-canvas-mcp-server/)
-- [AWS Pricing MCP Server](../aws-pricing-mcp-server/)
-- [AWS Documentation MCP Server](../aws-documentation-mcp-server/)
-- [AWS Diagram MCP Server](../aws-diagram-mcp-server/)
+- awslabs.aws-api-mcp-server
+- awslabs.cdk-mcp-server
+- awslabs.bedrock-kb-retrieval-mcp-server
+- awslabs.nova-canvas-mcp-server
+- awslabs.aws-pricing-mcp-server
+- awslabs.aws-documentation-mcp-server
+- awslabs.aws-diagram-mcp-server
 
 ## Features
 

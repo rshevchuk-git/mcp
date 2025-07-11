@@ -66,7 +66,7 @@ from typing import Any, NamedTuple, cast
 
 
 ARN_PATTERN = re.compile(
-    r'^(arn:(?:aws|aws-cn|aws-us-gov):[\w\d-]+:([\w\d-]*):\d{0,12}:[\w\d-]*\/?[\w\d-]*)(\/.*)?.*$'
+    r'^(arn:(?:aws|aws-cn|aws-iso|aws-iso-b|aws-iso-e|aws-iso-f|aws-us-gov):[\w\d-]+:([\w\d-]*):\d{0,12}:[\w\d-]*\/?[\w\d-]*)(\/.*)?.*$'
 )
 
 # These are subcommands for `aws` which are not actual services.

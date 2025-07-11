@@ -254,23 +254,21 @@ def main():
     global READ_OPERATIONS_INDEX
 
     if not WORKING_DIRECTORY:
-        error_message = (
-            '[AWS-API-MCP Error]: AWS_API_MCP_WORKING_DIR environment variable is not defined.\n'
-        )
-        sys.stderr.write(error_message)
+        error_message = 'AWS_API_MCP_WORKING_DIR environment variable is not defined.\n'
+        logger.error(error_message)
         raise ValueError(error_message)
 
     if not os.path.isabs(WORKING_DIRECTORY):
-        error_message = '[AWS-API-MCP Error]: AWS_API_MCP_WORKING_DIR must be an absolute path.\n'
-        sys.stderr.write(error_message)
+        error_message = 'AWS_API_MCP_WORKING_DIR must be an absolute path.\n'
+        logger.error(error_message)
         raise ValueError(error_message)
 
     os.chdir(WORKING_DIRECTORY)
     logger.info(f'CWD: {os.getcwd()}')
 
     if DEFAULT_REGION is None:
-        error_message = '[AWS-API-MCP Error]: AWS_REGION environment variable is not defined.\n'
-        sys.stderr.write(error_message)
+        error_message = 'AWS_REGION environment variable is not defined.\n'
+        logger.error(error_message)
         raise ValueError(error_message)
 
     logger.info('AWS_REGION: {}', DEFAULT_REGION)
@@ -278,8 +276,8 @@ def main():
     try:
         knowledge_base.setup()
     except Exception as e:
-        error_message = f'[AWS-API-MCP Error]: Error while setting up the knowledge base: {str(e)}'
-        sys.stderr.write(error_message)
+        error_message = f'Error while setting up the knowledge base: {str(e)}'
+        logger.error(error_message)
         raise RuntimeError(error_message)
 
     if READ_OPERATIONS_ONLY_MODE:

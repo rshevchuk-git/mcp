@@ -20,7 +20,7 @@ from loguru import logger
 from pathlib import Path
 
 
-DEFAULT_TOP_K = 3
+DEFAULT_TOP_K = 5
 DEFAULT_EMBEDDINGS_MODEL = 'BAAI/bge-base-en-v1.5'
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent / 'data' / 'embeddings'
 KNOWLEDGE_BASE_SUFFIX = 'knowledge-base-awscli'

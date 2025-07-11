@@ -24,7 +24,6 @@ import tarfile
 import tempfile
 import zipfile
 from awscli.clidriver import __version__ as awscli_version
-from awslabs.aws_api_mcp_server.core.common.config import FASTMCP_LOG_LEVEL
 from loguru import logger
 from pathlib import Path
 from typing import Optional
@@ -325,9 +324,5 @@ def try_download_latest_embeddings() -> bool:
 
 def main():
     """Main entry point for the script."""
-    # Configure Loguru logging
-    logger.remove()
-    logger.add(sys.stderr, level=FASTMCP_LOG_LEVEL)
-
     success = try_download_latest_embeddings()
     sys.exit(0 if success else 1)

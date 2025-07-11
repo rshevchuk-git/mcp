@@ -14,6 +14,7 @@
 
 import argparse
 import re
+import sys
 import time
 from ..core.aws.services import driver
 from ..core.kb.dense_retriever import (
@@ -163,4 +164,8 @@ def main():
 
 
 if __name__ == '__main__':
+    # Configure Loguru logging
+    logger.remove()
+    logger.add(sys.stderr)
+
     main()

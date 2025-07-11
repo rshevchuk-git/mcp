@@ -131,7 +131,7 @@ jobs:
       - name: Check for existing embeddings or generate new ones for aws-api-mcp-server
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN}}
-        if: needs.detect-packages.outputs.changed-directories != '[]' && needs.detect-packages.outputs.changed-directories != '' && contains(needs.detect-packages.outputs.changed-directories, matrix.package) && matrix.package == 'aws-api-mcp-server'
+        if: matrix.package == 'aws-api-mcp-server'
         working-directory: src/${{ matrix.package }}
         run: |
           # Try to download latest embeddings first

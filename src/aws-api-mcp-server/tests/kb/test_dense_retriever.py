@@ -184,7 +184,7 @@ def test_get_suggestions_success():
         {'command': 'aws s3 ls', 'description': 'List S3 buckets'},
         {'command': 'aws lambda list-functions', 'description': 'List Lambda functions'},
         {'command': 'aws logs describe-log-groups', 'description': 'List log groups'},
-        {'command': 'aws sts get-caller-identity', 'description': 'Show current identity'}
+        {'command': 'aws sts get-caller-identity', 'description': 'Show current identity'},
     ]
 
     # Create mock embeddings (3 documents, 384 dimensions like BAAI/bge-base-en-v1.5)
@@ -198,7 +198,7 @@ def test_get_suggestions_success():
         mock_index = MagicMock()
         mock_index.search.return_value = (
             np.array([[0.9, 0.8, 0.7, 0.6, 0.5]]),  # distances
-            np.array([[0, 1, 2, 3 ,4]]),  # indices
+            np.array([[0, 1, 2, 3, 4]]),  # indices
         )
         rag.index = mock_index
 
@@ -299,7 +299,7 @@ def test_get_suggestions_with_mock_model():
         {'command': 'aws s3 ls', 'description': 'List S3 buckets'},
         {'command': 'aws lambda list-functions', 'description': 'List Lambda functions'},
         {'command': 'aws logs describe-log-groups', 'description': 'List log groups'},
-        {'command': 'aws sts get-caller-identity', 'description': 'Show current identity'}
+        {'command': 'aws sts get-caller-identity', 'description': 'Show current identity'},
     ]
 
     # Create mock embeddings

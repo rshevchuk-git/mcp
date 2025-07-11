@@ -59,7 +59,7 @@ wheels = [
 
 [[package]]
 name = "awslabs-aws-api-mcp-server"
-version = "0.0.0"
+version = "0.1.9223372036854775807"
 source = { editable = "." }
 dependencies = [
     { name = "awscli" },
@@ -70,10 +70,7 @@ dependencies = [
     { name = "loguru" },
     { name = "lxml" },
     { name = "mcp" },
-    { name = "pre-commit" },
     { name = "pydantic" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
     { name = "python-json-logger" },
     { name = "requests" },
     { name = "sentence-transformers" },
@@ -102,10 +99,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "lxml", specifier = ">=5.1.0" },
     { name = "mcp", specifier = ">=1.9.1" },
-    { name = "pre-commit", specifier = ">=4.2.0" },
     { name = "pydantic", specifier = ">=2.10.6" },
-    { name = "pytest", specifier = ">=8.4.0" },
-    { name = "pytest-cov", specifier = ">=6.1.1" },
     { name = "python-json-logger", specifier = ">=2.0.7" },
     { name = "requests", specifier = ">=2.32.4" },
     { name = "sentence-transformers", specifier = ">=4.1.0" },
@@ -118,6 +112,7 @@ dev = [
     { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "pyright", specifier = ">=1.1.398" },
     { name = "pytest", specifier = ">=8.0.0" },
+    { name = "pytest", specifier = ">=8.4.0" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },
     { name = "pytest-mock", specifier = ">=3.12.0" },

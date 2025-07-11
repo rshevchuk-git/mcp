@@ -2,7 +2,7 @@
 name = "awslabs.aws-api-mcp-server"
 
 # NOTE: "Patch"=9223372036854775807 bumps next release to zero.
-version = "0.0.0"
+version = "0.1.9223372036854775807"
 
 description = "Model Context Protocol (MCP) server for interacting with AWS"
 readme = "README.md"
@@ -16,9 +16,6 @@ dependencies = [
     "python-json-logger>=2.0.7",
     "setuptools>=69.0.0",
     "lxml>=5.1.0",
-    "pytest>=8.4.0",
-    "pytest-cov>=6.1.1",
-    "pre-commit>=4.2.0",
     "sentence-transformers>=4.1.0",
     "faiss-cpu>=1.11.0",
     "loguru>=0.7.3",
@@ -64,6 +61,7 @@ dev = [
     "pytest-asyncio>=0.26.0",
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.12.0",
+    "pytest>=8.4.0",
 ]
 
 [build-system]

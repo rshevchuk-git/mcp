@@ -93,7 +93,7 @@ def interpret(
 
 
 def _get_user_agent_extra() -> str:
-    user_agent_extra = f'AWS-API-MCP/{PACKAGE_VERSION}'
+    user_agent_extra = f'awslabs/mcp/AWS-API-MCP-server/{PACKAGE_VERSION}'
     if not OPT_IN_TELEMETRY:
         return user_agent_extra
     # ReadOperationsOnly mode

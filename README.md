@@ -15,7 +15,7 @@ A suite of specialized MCP servers that help you get the most out of AWS, wherev
   - [Server Sent Events Support Removal](#server-sent-events-support-removal)
   - [Why AWS MCP Servers?](#why-aws-mcp-servers)
   - [Available MCP Servers](#available-mcp-servers)
-    - [ 🚀Getting Started with AWS](#-getting-started-with-aws)
+    - [🚀Getting Started with AWS](#-getting-started-with-aws)
     - [Browse by What You're Building](#browse-by-what-youre-building)
       - [📚 Real-time access to official AWS documentation](#-real-time-access-to-official-aws-documentation)
       - [🏗️ Infrastructure \& Deployment](#️-infrastructure--deployment)

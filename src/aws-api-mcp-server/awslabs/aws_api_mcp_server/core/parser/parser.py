@@ -385,6 +385,14 @@ def _handle_service_command(
     parsed_args = operation_parser.parse_operation_args(command_metadata, service_remaining)
     _handle_invalid_parameters(command_metadata, service, operation, parsed_args)
 
+    outfile = getattr(parsed_args.operation_args, 'outfile', None)
+    if outfile is not None and outfile != '-':
+        # Output file parameters are currently ignored by the interpreter
+        # Raising a validation error to make it explicit
+        raise CommandValidationError(
+            'Output file parameters are not supported yet. Use - as the output file to get the requested data in the response.'
+        )
+
     try:
         parameters = operation_command._build_call_parameters(
             parsed_args.operation_args, operation_command.arg_table

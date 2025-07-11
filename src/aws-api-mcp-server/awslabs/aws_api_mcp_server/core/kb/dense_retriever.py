@@ -149,7 +149,10 @@ class DenseRetriever:
         """Calculate indexes for the given documents."""
         self._documents = deepcopy(documents)
         self._embeddings = self.model.encode(
-            [json.dumps(doc) for doc in self._documents], normalize_embeddings=True, batch_size=64
+            [json.dumps(doc) for doc in self._documents],
+            normalize_embeddings=True,
+            batch_size=64,
+            show_progress_bar=True,
         ).astype('float32')
 
     def get_suggestions(self, query: str, **kwargs) -> dict[str, list[dict]]:

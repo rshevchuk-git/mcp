@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # dependabot should continue to update this to the latest hash.
-FROM public.ecr.aws/sam/build-python3.13@sha256:0df1547849c376aa21f9c726c0d71c4974415ed4405256f8d79f8c25716a9c63 AS uv
+FROM public.ecr.aws/sam/build-python3.12@sha256:e76d50b20fa10ee101886cb62962aaf87a5cd1d737af48e1b8395a05f3a7c52f AS uv
 
 # Install the project into `/app`
 WORKDIR /app
@@ -47,7 +47,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Make the directory just in case it doesn't exist
 RUN mkdir -p /root/.local
 
-FROM public.ecr.aws/sam/build-python3.13@sha256:0df1547849c376aa21f9c726c0d71c4974415ed4405256f8d79f8c25716a9c63
+FROM public.ecr.aws/sam/build-python3.12@sha256:e76d50b20fa10ee101886cb62962aaf87a5cd1d737af48e1b8395a05f3a7c52f
 
 # Place executables in the environment at the front of the path and include other binaries
 ENV PATH="/app/.venv/bin:$PATH:/usr/sbin"

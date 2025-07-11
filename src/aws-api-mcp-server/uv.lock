@@ -111,7 +111,6 @@ dev = [
     { name = "commitizen", specifier = ">=4.2.2" },
     { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "pyright", specifier = ">=1.1.398" },
-    { name = "pytest", specifier = ">=8.0.0" },
     { name = "pytest", specifier = ">=8.4.0" },
     { name = "pytest-asyncio", specifier = ">=0.26.0" },
     { name = "pytest-cov", specifier = ">=4.1.0" },

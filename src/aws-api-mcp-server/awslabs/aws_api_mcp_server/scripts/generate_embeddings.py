@@ -79,7 +79,6 @@ def _generate_operation_document(
             # we need to make sure a group name is only processed once
             # event_handler.doc_option takes care of mentioning all arguments in a group
             # so we can safely skip the remaining arguments in the group
-            help_command.doc = ReSTDocument()
             seen_arg_groups.add(arg.group_name)
 
     return {

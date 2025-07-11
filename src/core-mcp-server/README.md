@@ -5,7 +5,7 @@ MCP server that provides a starting point for using the following awslabs MCP se
 - [AWS CDK MCP Server](../cdk-mcp-server/)
 - [Amazon Bedrock Knowledge Bases Retrieval MCP Server](../bedrock-kb-retrieval-mcp-server/)
 - [Amazon Nova Canvas MCP Server](../nova-canvas-mcp-server/)
-- [Cost Analysis MCP Server](../cost-analysis-mcp-server/)
+- [AWS Pricing MCP Server](../aws-pricing-mcp-server/)
 - [AWS Documentation MCP Server](../aws-documentation-mcp-server/)
 - [AWS Diagram MCP Server](../aws-diagram-mcp-server/)
 

@@ -31,6 +31,7 @@ A suite of specialized MCP servers that help you get the most out of AWS, wherev
       - [🛠️ Developer Tools \& Support](#️-developer-tools--support)
       - [📡 Integration \& Messaging](#-integration--messaging)
       - [💰 Cost \& Operations](#-cost--operations)
+      - [🧬 Healthcare \& Lifesciences](#-healthcare--lifesciences)
     - [Browse by How You're Working](#browse-by-how-youre-working)
       - [👨‍💻 Vibe Coding \& Development](#-vibe-coding--development)
         - [Core Development Workflow](#core-development-workflow)
@@ -38,6 +39,7 @@ A suite of specialized MCP servers that help you get the most out of AWS, wherev
         - [Application Development](#application-development)
         - [Container \& Serverless Development](#container--serverless-development)
         - [Testing \& Data](#testing--data)
+        - [Lifesciences Workflow Development](#lifesciences-workflow-development)
       - [💬 Conversational Assistants](#-conversational-assistants)
         - [Knowledge \& Search](#knowledge--search)
         - [Content Processing \& Generation](#content-processing--generation)
@@ -202,10 +204,17 @@ Connect systems with messaging, workflows, and location services.
 
 Monitor, optimize, and manage your AWS infrastructure and costs.
 
-- **[Cost Analysis MCP Server](src/cost-analysis-mcp-server/)** - Pre-deployment cost estimation and optimization
+- **[AWS Pricing MCP Server](src/aws-pricing-mcp-server/)** - Pre-deployment cost estimation and optimization
 - **[AWS Cost Explorer MCP Server](src/cost-explorer-mcp-server/)** - Detailed cost analysis and reporting
-- **[Amazon CloudWatch Logs MCP Server](src/cloudwatch-logs-mcp-server/)** - Log analysis and operational troubleshooting
+- **[Amazon CloudWatch MCP Server](src/cloudwatch-mcp-server/)** - Metrics, Alarms, and Logs analysis and operational troubleshooting
+- **[Amazon CloudWatch Logs MCP Server (deprecated)](src/cloudwatch-logs-mcp-server/)** - Log analysis and operational troubleshooting
 - **[AWS Managed Prometheus MCP Server](src/prometheus-mcp-server/)** - Prometheus-compatible operations
+
+#### 🧬 Healthcare & Lifesciences
+
+Interact with AWS HealthAI services.
+
+- **[AWS HealthOmics MCP Server](src/aws-healthomics-mcp-server/)** - Generate, run, debug and optimize lifescience workflows on AWS HealthOmics
 
 ---
 
@@ -245,6 +254,10 @@ Monitor, optimize, and manage your AWS infrastructure and costs.
 
 - **[Synthetic Data MCP Server](src/syntheticdata-mcp-server/)** - Generate realistic test data for your applications
 
+##### Lifesciences Workflow Development
+
+- **[AWS HealthOmics MCP Server](/src/aws-healthomics-mcp-server/)** - Generate, deploy, run and debug WDL, Nextflow and CWL workflows
+
 #### 💬 Conversational Assistants
 
 *Customer-facing chatbots, business agents, and interactive Q&A systems*
@@ -265,7 +278,7 @@ Monitor, optimize, and manage your AWS infrastructure and costs.
 ##### Business Services
 
 - **[Amazon Location Service MCP Server](src/aws-location-mcp-server/)** - Location search, geocoding, and business hours
-- **[Cost Analysis MCP Server](src/cost-analysis-mcp-server/)** - Answer cost questions and provide estimates
+- **[AWS Pricing MCP Server](src/aws-pricing-mcp-server/)** - AWS service pricing and cost estimates
 - **[AWS Cost Explorer MCP Server](src/cost-explorer-mcp-server/)** - Detailed cost analysis and spend reports
 
 #### 🤖 Autonomous Background Agents
@@ -274,6 +287,7 @@ Monitor, optimize, and manage your AWS infrastructure and costs.
 
 ##### Data Operations & ETL
 
+- **[Amazon Data Processing MCP Server](src/aws-dataprocessing-mcp-server/)** - Comprehensive data processing tools and real-time pipeline visibility across AWS Glue and Amazon EMR-EC2
 - **[Amazon DynamoDB MCP Server](src/dynamodb-mcp-server/)** - NoSQL database operations and table management
 - **[Amazon Aurora PostgreSQL MCP Server](src/postgres-mcp-server/)** - PostgreSQL operations via RDS Data API
 - **[Amazon Aurora MySQL MCP Server](src/mysql-mcp-server/)** - MySQL operations via RDS Data API
@@ -297,7 +311,9 @@ Monitor, optimize, and manage your AWS infrastructure and costs.
 
 ##### Operations & Monitoring
 
-- **[Amazon CloudWatch Logs MCP Server](src/cloudwatch-logs-mcp-server/)** - Log analysis and operational troubleshooting
+- **[Amazon CloudWatch MCP Server](src/cloudwatch-mcp-server/)** - Metrics, Alarms, and Logs analysis and operational troubleshooting
+- **[Amazon CloudWatch Logs MCP Server (deprecated)](src/cloudwatch-logs-mcp-server/)** - Log analysis and operational troubleshooting
+- **[Amazon CloudWatch Application Signals MCP Server](src/cloudwatch-appsignals-mcp-server/)** - Application monitoring and performance insights
 - **[AWS Cost Explorer MCP Server](src/cost-explorer-mcp-server/)** - Cost monitoring and spend analysis
 - **[AWS Managed Prometheus MCP Server](src/prometheus-mcp-server/)** - Prometheus-compatible operations
 
@@ -317,7 +333,7 @@ See [`src/mcp-lambda-handler/README.md`](src/mcp-lambda-handler/README.md) for f
 
 ## Use Cases for the Servers
 
-For example, you can use the **AWS Documentation MCP Server** to help your AI assistant research and generate up-to-date code for any AWS service, like Amazon Bedrock Inline agents. Alternatively, you could use the **CDK MCP Server** or the **Terraform MCP Server** to have your AI assistant create infrastructure-as-code implementations that use the latest APIs and follow AWS best practices. With the **Cost Analysis MCP Server**, you could ask "What would be the estimated monthly cost for this CDK project before I deploy it?" or "Can you help me understand the potential AWS service expenses for this infrastructure design?" and receive detailed cost estimations and budget planning insights. The **Valkey MCP Server** enables natural language interaction with Valkey data stores, allowing AI assistants to efficiently manage data operations through a simple conversational interface.
+For example, you can use the **AWS Documentation MCP Server** to help your AI assistant research and generate up-to-date code for any AWS service, like Amazon Bedrock Inline agents. Alternatively, you could use the **CDK MCP Server** or the **Terraform MCP Server** to have your AI assistant create infrastructure-as-code implementations that use the latest APIs and follow AWS best practices. With the **AWS Pricing MCP Server**, you could ask "What would be the estimated monthly cost for this CDK project before I deploy it?" or "Can you help me understand the potential AWS service expenses for this infrastructure design?" and receive detailed cost estimations and budget planning insights. The **Valkey MCP Server** enables natural language interaction with Valkey data stores, allowing AI assistants to efficiently manage data operations through a simple conversational interface.
 
 ## Installation and Setup
 
@@ -364,10 +380,10 @@ Example configuration for Amazon Q CLI MCP (`~/.aws/amazonq/mcp.json`):
         "FASTMCP_LOG_LEVEL": "ERROR"
       }
     },
-    "awslabs.cost-analysis-mcp-server": {
+    "awslabs.aws-pricing-mcp-server": {
       "command": "uvx",
       "args": [
-        "awslabs.cost-analysis-mcp-server@latest"
+        "awslabs.aws-pricing-mcp-server@latest"
       ],
       "env": {
         "AWS_PROFILE": "your-aws-profile",
@@ -725,9 +741,9 @@ For every new project, always look at your MCP servers and use mcp-core as the s
         "FASTMCP_LOG_LEVEL": "ERROR"
       }
     },
-    "awslabs.cost-analysis-mcp-server": {
+    "awslabs.aws-pricing-mcp-server": {
       "command": "uvx",
-      "args": ["awslabs.cost-analysis-mcp-server@latest"],
+      "args": ["awslabs.aws-pricing-mcp-server@latest"],
       "env": {
         "AWS_PROFILE": "your-aws-profile",
         "FASTMCP_LOG_LEVEL": "ERROR"

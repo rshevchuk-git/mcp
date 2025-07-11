@@ -11,10 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import importlib.resources
+import json
 import requests
+from awslabs.aws_api_mcp_server.core.parser.classifier import METADATA_FILE
+from collections import defaultdict
 from loguru import logger
+from typing import List
 
 
 SERVICE_REFERENCE_URL = 'https://servicereference.us-east-1.amazonaws.com/'
@@ -39,18 +42,26 @@ class ServiceReferenceUrlsByService(dict):
 class ReadOnlyOperations(dict):
     """Read only operations list by service."""
 
-    def __init__(self, service_reference_urls_by_service: dict):
+    def __init__(self, service_reference_urls_by_service: dict[str, str]):
         """Initialize the read only operations list."""
         super().__init__()
         self._service_reference_urls_by_service = service_reference_urls_by_service
-        self._custom_readonly_operations = self._get_custom_readonly_operations()
+        self._known_readonly_operations = self._get_known_readonly_operations_from_metadata()
+        for service, operations in self._get_custom_readonly_operations().items():
+            if service in self._known_readonly_operations:
+                self._known_readonly_operations[service] = [
+                    *self._known_readonly_operations[service],
+                    *operations,
+                ]
+            else:
+                self._known_readonly_operations[service] = operations
 
     def has(self, service, operation) -> bool:
         """Check if the operation is in the read only operations list."""
         logger.info(f'checking in read only list : {service} - {operation}')
         if (
-            service in self._custom_readonly_operations
-            and operation in self._custom_readonly_operations[service]
+            service in self._known_readonly_operations
+            and operation in self._known_readonly_operations[service]
         ):
             return True
         if service not in self:
@@ -72,7 +83,22 @@ class ReadOnlyOperations(dict):
             if not action['Annotations']['Properties']['IsWrite']:
                 self[service].append(action['Name'])
 
-    def _get_custom_readonly_operations(self) -> dict:
+    def _get_known_readonly_operations_from_metadata(self) -> dict[str, List[str]]:
+        known_readonly_operations = defaultdict(list)
+        with (
+            importlib.resources.files('awslabs.aws_api_mcp_server.core')
+            .joinpath(METADATA_FILE)
+            .open() as metadata_file
+        ):
+            data = json.load(metadata_file)
+        for service, operations in data.items():
+            for operation, operation_metadata in operations.items():
+                operation_type = operation_metadata.get('type')
+                if operation_type == 'ReadOnly':
+                    known_readonly_operations[service].append(operation)
+        return known_readonly_operations
+
+    def _get_custom_readonly_operations(self) -> dict[str, List[str]]:
         return {
             's3': ['ls', 'presign'],
             'cloudfront': ['sign'],

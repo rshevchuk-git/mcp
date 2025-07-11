@@ -136,6 +136,8 @@ Once configured, you can ask your AI assistant questions such as:
 
 
 ## Available MCP Tools
+The tool names are subject to change, please refer to [CHANGELOG.md](CHANGELOG.md) for any changes and adapt your workflows accordingly.
+
 - `call_aws`: Executes AWS CLI commands with validation and proper error handling
 - `suggest_aws_commands`: Suggests AWS CLI commands based on a natural language query. This tool helps the model generate CLI commands by providing a description and the complete set of parameters for the 5 most likely CLI commands for the given query, including the most recent AWS CLI commands - some of which may be otherwise unknown to the model (released after the model's knowledge cut-off date). This enables RAG (Retrieval-Augmented Generation) for CLI command generation via the AWS CLI command table as the knowledge source, M3 text embedding model [Chen et al., Findings of ACL 2024] for representing query and CLI documents as dense vectors, and FAISS for nearest neighbour search.
 

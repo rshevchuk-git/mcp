@@ -15,6 +15,7 @@ import importlib.resources
 import json
 import requests
 from awslabs.aws_api_mcp_server.core.parser.classifier import METADATA_FILE
+from collections import defaultdict
 from loguru import logger
 from typing import List
 
@@ -83,7 +84,7 @@ class ReadOnlyOperations(dict):
                 self[service].append(action['Name'])
 
     def _get_known_readonly_operations_from_metadata(self) -> dict[str, List[str]]:
-        known_readonly_operations = {}
+        known_readonly_operations = defaultdict(list)
         with (
             importlib.resources.files('awslabs.aws_api_mcp_server.core')
             .joinpath(METADATA_FILE)
@@ -91,10 +92,8 @@ class ReadOnlyOperations(dict):
         ):
             data = json.load(metadata_file)
         for service, operations in data.items():
-            if service not in known_readonly_operations:
-                known_readonly_operations[service] = []
-            for operation in operations:
-                operation_type = data.get(service).get(operation).get('type')
+            for operation, operation_metadata in operations.items():
+                operation_type = operation_metadata.get('type')
                 if operation_type == 'ReadOnly':
                     known_readonly_operations[service].append(operation)
         return known_readonly_operations

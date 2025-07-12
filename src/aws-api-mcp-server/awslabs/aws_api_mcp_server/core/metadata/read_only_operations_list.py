@@ -98,7 +98,8 @@ class ReadOnlyOperations(dict):
                     known_readonly_operations[service].append(operation)
         return known_readonly_operations
 
-    def _get_custom_readonly_operations(self) -> dict[str, List[str]]:
+    @staticmethod
+    def _get_custom_readonly_operations() -> dict[str, List[str]]:
         return {
             's3': ['ls', 'presign'],
             'cloudfront': ['sign'],

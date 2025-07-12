@@ -173,6 +173,11 @@ A few examples of commands which can write to the file system include:
 - `aws s3 cp`
 - Any AWS CLI command using the `outfile` positional argument
 
+### Logging
+
+Logs of the MCP server are stored in the system's temporary directory, under **aws-api-mcp** subfolder - on Windows and macOS, this is the system temp directory, while on Linux it uses `XDG_RUNTIME_DIR`,
+`TMPDIR`, or `/tmp` as fallback. The logs contain MCP server operational data including command executions, errors, and debugging information to help users monitor and perform forensics of the MCP server.
+
 ### Security best practices
 
 While the examples above use AWS managed policies like `AdministratorAccess` and `ReadOnlyAccess` for simplicity, we **strongly** recommend following the principle of least privilege by creating custom policies tailored to your specific use case.

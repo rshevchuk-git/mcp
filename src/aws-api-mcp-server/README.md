@@ -173,6 +173,10 @@ A few examples of commands which can write to the file system include:
 - `aws s3 cp`
 - Any AWS CLI command using the `outfile` positional argument
 
+### Security best practices
+
+While the examples above use AWS managed policies like `AdministratorAccess` and `ReadOnlyAccess` for simplicity, we **strongly** recommend following the principle of least privilege by creating custom policies tailored to your specific use case.
+Start with minimal permissions and gradually add access as needed for your specific workflows. You can also combine these custom policies with condition statements to further restrict access by region or other factors based on your security requirements.
 
 ## License
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.

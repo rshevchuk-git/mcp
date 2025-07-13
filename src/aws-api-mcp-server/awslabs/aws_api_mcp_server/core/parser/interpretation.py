@@ -23,7 +23,6 @@ from ..common.config import OPT_IN_TELEMETRY, READ_OPERATIONS_ONLY_MODE
 from ..common.helpers import operation_timer
 from botocore.config import Config
 from jmespath.parser import ParsedResult
-from loguru import logger
 from typing import Any
 
 
@@ -50,21 +49,19 @@ def interpret(
     The function returns the response from the operation indicated by the
     intermediate representation.
     """
-    logger.info("Interpreting IR in '{}' region", region)
-
     config_result = extract_pagination_config(ir.parameters, max_results)
     parameters = config_result.parameters
     pagination_config = config_result.pagination_config
 
-    with operation_timer(ir.service_name, ir.operation_python_name):
-        config = Config(
-            region_name=region,
-            connect_timeout=TIMEOUT_AFTER_SECONDS,
-            read_timeout=TIMEOUT_AFTER_SECONDS,
-            retries={'max_attempts': 1},
-            user_agent_extra=_get_user_agent_extra(),
-        )
+    config = Config(
+        region_name=region,
+        connect_timeout=TIMEOUT_AFTER_SECONDS,
+        read_timeout=TIMEOUT_AFTER_SECONDS,
+        retries={'max_attempts': 1},
+        user_agent_extra=_get_user_agent_extra(),
+    )
 
+    with operation_timer(ir.service_name, ir.operation_python_name, region):
         client = boto3.client(
             ir.service_name,
             aws_access_key_id=access_key_id,

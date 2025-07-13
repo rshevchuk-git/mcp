@@ -23,14 +23,15 @@ from typing import Any
 
 
 @contextmanager
-def operation_timer(service: str, operation: str):
+def operation_timer(service: str, operation: str, region: str):
     """Context manager for timing interpretation calls.
 
     :param service: The service name.
     :param operation: The operation name.
+    :param region: The region where the call is being made
     """
     start = time.perf_counter()
-    logger.info('Starting interpreting operation {}.{}', service, operation)
+    logger.info('Interpreting operation {}.{} for region {}', service, operation, region)
     yield
     end = time.perf_counter()
     elapsed_time = end - start

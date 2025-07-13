@@ -137,6 +137,7 @@ async def suggest_aws_commands(
     - For cross-region or account-wide operations, explicitly include --region parameter
     - All commands are validated before execution to prevent errors
     - Supports pagination control via max_results parameter
+    - The current working directory is {WORKING_DIRECTORY} and the home directory is {os.path.expanduser('~')}
 
     Best practices for command generation:
     — Always use the most specific service and operation names
@@ -149,6 +150,7 @@ async def suggest_aws_commands(
     - DO NOT use shell redirection operators (>, >>, <)
     - DO NOT use command substitution ($())
     - DO NOT use shell variables or environment variables
+    - DO NOT use relative paths for reading or writing files, use absolute paths instead
 
     Common pitfalls to avoid:
     1. Missing required parameters - always include all required parameters

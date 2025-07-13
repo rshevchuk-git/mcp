@@ -608,3 +608,16 @@ def test_outfile_parameter_not_supported(command):
         match='Output file parameters are not supported yet. Use - as the output file to get the requested data in the response.',
     ):
         parse(command)
+
+
+def test_valid_expand_user_home_directory():
+    """Test that tilde is replaced with user home directory."""
+    result = parse(cli_command='aws s3 cp s3://my_file ~/temp/test.txt')
+    assert not any(param.startswith('~') for param in result.parameters['--paths'])
+
+
+def test_invalid_expand_user_home_directory():
+    """Test that tilde is not replaced."""
+    result = parse(cli_command='aws s3 cp s3://my_file ~user_that_does_not_exist/temp/test.txt')
+    print(result)
+    assert any(param.startswith('~') for param in result.parameters['--paths'])

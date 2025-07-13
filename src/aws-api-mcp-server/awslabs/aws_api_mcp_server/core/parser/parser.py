@@ -57,6 +57,7 @@ from awscli.argparser import ArgTableArgParser, CommandAction, MainArgParser
 from awscli.argprocess import ParamError
 from awscli.arguments import BaseCLIArgument, CLIArgument
 from awscli.clidriver import ServiceCommand
+from awslabs.aws_api_mcp_server.core.common.helpers import expand_user_home_directory
 from botocore.exceptions import ParamValidationError, UndefinedModelAttributeError
 from botocore.model import OperationModel, ServiceModel
 from collections.abc import Generator
@@ -337,8 +338,8 @@ driver._add_aliases(command_table, parser)
 def parse(cli_command: str) -> IRCommand:
     """Parse a CLI command string into an IRCommand object."""
     tokens = split_cli_command(cli_command)
-    # Strip `aws`
-    tokens = tokens[1:]
+    # Strip `aws` and expand paths beginning with ~
+    tokens = expand_user_home_directory(tokens[1:])
     global_args, remaining = parser.parse_known_args(tokens)
     service_command = command_table[global_args.command]
 

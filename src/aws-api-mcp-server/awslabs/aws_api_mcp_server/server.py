@@ -137,10 +137,11 @@ async def suggest_aws_commands(
     - For cross-region or account-wide operations, explicitly include --region parameter
     - All commands are validated before execution to prevent errors
     - Supports pagination control via max_results parameter
-    - The current working directory is {WORKING_DIRECTORY} and the home directory is {os.path.expanduser('~')}
+    - The current working directory is {WORKING_DIRECTORY}
 
     Best practices for command generation:
     — Always use the most specific service and operation names
+    - Always use the working directory when writing files, unless user explicitly mentioned another directory
     — Include --region when operating across regions
     - Only use filters (--filters, --query, --prefix, --pattern, etc) when necessary or user explicitly asked for it
 

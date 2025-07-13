@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import os
 import time
 from botocore.response import StreamingBody
 from contextlib import contextmanager
@@ -52,3 +53,8 @@ class Boto3Encoder(json.JSONEncoder):
 def as_json(boto_response: dict[str, Any]) -> str:
     """Convert a boto3 response dictionary to a JSON string."""
     return json.dumps(boto_response, cls=Boto3Encoder)
+
+
+def expand_user_home_directory(args: list[str]) -> list[str]:
+    """Expand paths beginning with '~' or '~user'."""
+    return [os.path.expanduser(arg) for arg in args]

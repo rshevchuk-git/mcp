@@ -20,7 +20,6 @@ from ..common.errors import (
 )
 from ..common.helpers import as_json
 from ..common.models import InterpretedProgram, IRTranslation
-from ..parser.classifier import classify_operation
 from ..parser.interpretation import interpret
 from ..parser.parser import parse
 from .regions import GLOBAL_SERVICE_REGIONS
@@ -46,21 +45,14 @@ def translate_cli_to_ir(cli_command: str) -> IRTranslation:
     except (CliParsingError, CommandValidationError) as exc:
         return IRTranslation(validation_failures=[exc.as_failure()])
     except MissingContextError as exc:
-        classification = classify_operation(
-            exc.command_metadata.service_sdk_name,
-            exc.command_metadata.operation_sdk_name,
-        )
         return IRTranslation(
             missing_context_failures=[exc.as_failure()],
             command_metadata=exc.command_metadata,
-            classification=classification,
         )
 
-    classification = classify_operation(command.service_name, command.operation_name)
     return IRTranslation(
         command=command,
         command_metadata=command.command_metadata,
-        classification=classification,
     )
 
 

@@ -15,6 +15,7 @@ from awslabs.aws_api_mcp_server.core.common.errors import (
     MissingRequiredParametersError,
     ParameterSchemaValidationError,
     ParameterValidationErrorRecord,
+    ServiceNotAllowedError,
     ShortHandParserError,
     UnknownFiltersError,
 )
@@ -26,14 +27,24 @@ from awslabs.aws_api_mcp_server.core.parser.parser import parse
     [
         ('aws s4 ls', 's4'),
         ('aws cloud8 list-environments', 'cloud8'),
-        # The command exist but it is not a service
-        ('aws configure', 'configure'),
-        ('aws history list', 'history'),
     ],
 )
 def test_invalid_service(command, service):
     """Test that an invalid service raises InvalidServiceError."""
     with pytest.raises(InvalidServiceError, match=service):
+        parse(command)
+
+
+@pytest.mark.parametrize(
+    'command,service',
+    [
+        ('aws configure', 'configure'),
+        ('aws history list', 'history'),
+    ],
+)
+def test_service_not_allowed(command, service):
+    """Test that not allowed services raises the right exception."""
+    with pytest.raises(ServiceNotAllowedError, match=service):
         parse(command)
 
 

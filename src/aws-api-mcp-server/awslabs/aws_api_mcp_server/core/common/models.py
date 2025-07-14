@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import dataclasses
-import enum
 from .command import IRCommand
 from .command_metadata import CommandMetadata
 from .errors import Failure
@@ -31,8 +30,8 @@ class AwsApiMcpServerErrorResponse(BaseModel):
 class ProgramValidationRequest(BaseModel):
     """The request structure for the validation endpoint."""
 
-    cli_command: str
     """An AWS CLI command which will be validated"""
+    cli_command: str
 
 
 class Context(BaseModel):
@@ -62,29 +61,11 @@ class InterpretationMetadata(BaseModel):
     region_name: str | None = None
 
 
-class ProgramClassificationMetadata(BaseModel):
-    """The API type (management, data).
-
-    Management refers to control plane operations in CloudTrail's parlance.
-    Data refers to data plane operations in CloudTrail's parlance
-    """
-
-    api_type: str | None
-
-    action_types: list[str] | None
-    """The action type of the program
-
-    The action type defines if the program is read-only or has updates
-    or has creates etc.
-    """
-
-
 class ProgramValidationResponse(BaseModel):
     """Response for a program validation request."""
 
     validation_failures: list[ValidationFailure] | None
     missing_context_failures: list[ValidationFailure] | None
-    classification: ProgramClassificationMetadata | None
 
     @property
     def validation_failed(self) -> bool:
@@ -144,51 +125,6 @@ class ProgramInterpretationResponse(BaseModel):
     failed_constraints: list[str] | None = Field(default=None)
 
 
-class ActionType(enum.Enum):
-    """Model an action type.
-
-    Actions can be classified into multiple sub-actions, each with their
-    own type. For instance, a single CLI command can be read-only (list, describe)
-    or a mutation (create, delete, update). Multiple commands can have a mixture of action types.
-    """
-
-    READ_ONLY = 'read-only'
-    MUTATING = 'mutating'
-    UNKNOWN = 'unknown'
-
-
-class ApiType(enum.Enum):
-    """The API type of given action(management, data).
-
-    Management refers to control plane operations in CloudTrail's parlance.
-    Data refers to data plane operations in CloudTrail's parlance
-    """
-
-    MANAGEMENT = 'management'
-    DATA = 'data'
-    UNKNOWN = 'unknown'
-
-
-@dataclasses.dataclass(frozen=True)
-class CommandClassification:
-    """The classification of a command in action types and api types."""
-
-    action_types: list[ActionType]
-    api_type: ApiType
-
-    def as_metadata(self):
-        """Return the classification as a metadata dictionary."""
-        return {
-            'api_type': self.api_type.value,
-            'action_types': [action_type.value for action_type in self.action_types],
-        }
-
-
-UnknownClassification = CommandClassification(
-    action_types=[ActionType.UNKNOWN], api_type=ApiType.UNKNOWN
-)
-
-
 @dataclasses.dataclass(frozen=True)
 class IRTranslation:
     """Represents the results of validation and translation to intermediate representation."""
@@ -201,9 +137,6 @@ class IRTranslation:
 
     """A Python program that was translated from a given CLI command"""
     program: str | None = None
-
-    """The clasification for this command"""
-    classification: CommandClassification | None = None
 
     """Validation reasons why the program could not be translated
 

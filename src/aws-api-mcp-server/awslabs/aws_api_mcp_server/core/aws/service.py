@@ -25,7 +25,6 @@ from ..common.models import (
     InterpretationResponse,
     InterpretedProgram,
     IRTranslation,
-    ProgramClassificationMetadata,
     ProgramInterpretationResponse,
     ProgramValidationResponse,
 )
@@ -38,7 +37,6 @@ from ..parser.lexer import split_cli_command
 from .driver import interpret_command as _interpret_command
 from botocore.exceptions import NoCredentialsError
 from io import StringIO
-from loguru import logger
 from typing import Any
 
 
@@ -52,15 +50,6 @@ def get_local_credentials() -> Credentials:
 
     if aws_creds is None:
         raise NoCredentialsError()
-
-    creds_source = (
-        aws_creds.method
-        if AWS_API_MCP_PROFILE_NAME is None
-        else f'{AWS_API_MCP_PROFILE_NAME} profile'
-    )
-    logger.info(
-        f'AWS credentials successfully resolved using: {creds_source}.'
-    )  # logging the source of credentials
 
     return Credentials(
         access_key_id=aws_creds.access_key,
@@ -87,16 +76,9 @@ def is_operation_read_only(ir: IRTranslation, read_only_operations: ReadOnlyOper
 
 def validate(ir: IRTranslation) -> ProgramValidationResponse:
     """Translate the given CLI command and return a validation response."""
-    classification = (
-        ProgramClassificationMetadata(**ir.classification.as_metadata())
-        if ir.classification
-        else None
-    )
-
     return ProgramValidationResponse(
         missing_context_failures=_to_missing_context_failures(ir.missing_context_failures),
         validation_failures=_to_validation_failures(ir.validation_or_translation_failures),
-        classification=classification,
     )
 
 

@@ -457,8 +457,7 @@ def test_is_operation_read_only_raises_error_for_missing_operation_name():
 
 @patch('awslabs.aws_api_mcp_server.core.aws.service.AWS_API_MCP_PROFILE_NAME', 'test')
 @patch('awslabs.aws_api_mcp_server.core.aws.service.boto3.Session')
-@patch('awslabs.aws_api_mcp_server.core.aws.service.logger')
-def test_get_local_credentials_success_with_aws_mcp_profile(mock_logger, mock_session_class):
+def test_get_local_credentials_success_with_aws_mcp_profile(mock_session_class):
     """Test get_local_credentials returns credentials when available."""
     mock_session = MagicMock()
     mock_session_class.return_value = mock_session
@@ -472,9 +471,6 @@ def test_get_local_credentials_success_with_aws_mcp_profile(mock_logger, mock_se
 
     result = get_local_credentials()
 
-    mock_logger.info.assert_called_with(
-        'AWS credentials successfully resolved using: test profile.'
-    )
     assert isinstance(result, Credentials)
     assert result.access_key_id == 'test-access-key'
     assert result.secret_access_key == 'test-secret-key'  # pragma: allowlist secret
@@ -484,8 +480,7 @@ def test_get_local_credentials_success_with_aws_mcp_profile(mock_logger, mock_se
 
 
 @patch('awslabs.aws_api_mcp_server.core.aws.service.boto3.Session')
-@patch('awslabs.aws_api_mcp_server.core.aws.service.logger')
-def test_get_local_credentials_success_with_default_creds(mock_logger, mock_session_class):
+def test_get_local_credentials_success_with_default_creds(mock_session_class):
     """Test get_local_credentials returns credentials when available."""
     mock_session = MagicMock()
     mock_session_class.return_value = mock_session
@@ -499,8 +494,6 @@ def test_get_local_credentials_success_with_default_creds(mock_logger, mock_sess
 
     result = get_local_credentials()
 
-    logged_message = mock_logger.info.call_args[0][0]
-    assert 'profile' not in logged_message
     assert isinstance(result, Credentials)
     assert result.access_key_id == 'test-access-key'
     assert result.secret_access_key == 'test-secret-key'  # pragma: allowlist secret

@@ -51,10 +51,7 @@ async def test_call_aws_success(
     mock_ir.command.is_awscli_customization = False  # Ensure interpret_command is called
     mock_translate_cli_to_ir.return_value = mock_ir
 
-    # Mock response with classification as a "read-only" operation
     mock_response = MagicMock()
-    mock_response.classification = MagicMock()
-    mock_response.classification.action_types = ['read-only']
     mock_response.validation_failed = False
     mock_validate.return_value = mock_response
 
@@ -155,10 +152,7 @@ async def test_call_aws_with_mutating_action(
     mock_ir.command.is_awscli_customization = False  # Ensure interpret_command is called
     mock_translate_cli_to_ir.return_value = mock_ir
 
-    # Mock response with classification that passes validation
     mock_response = MagicMock()
-    mock_response.classification = MagicMock()
-    mock_response.classification.action_types = ['mutating']
     mock_response.validation_failed = False
     mock_validate.return_value = mock_response
 
@@ -227,8 +221,6 @@ async def test_call_aws_no_credentials_error(
 
     # Mock validation response
     mock_response = MagicMock()
-    mock_response.classification = MagicMock()
-    mock_response.classification.action_types = ['read-only']
     mock_response.validation_failed = False
     mock_validate.return_value = mock_response
 
@@ -274,8 +266,6 @@ async def test_call_aws_execution_error_awsmcp_error(
 
     # Mock validation response
     mock_response = MagicMock()
-    mock_response.classification = MagicMock()
-    mock_response.classification.action_types = ['read-only']
     mock_response.validation_failed = False
     mock_validate.return_value = mock_response
 
@@ -323,8 +313,6 @@ async def test_call_aws_execution_error_generic_exception(
 
     # Mock validation response
     mock_response = MagicMock()
-    mock_response.classification = MagicMock()
-    mock_response.classification.action_types = ['read-only']
     mock_response.validation_failed = False
     mock_validate.return_value = mock_response
 
@@ -377,8 +365,6 @@ async def test_when_operation_is_not_allowed(
 
     # Mock validation response
     mock_response = MagicMock()
-    mock_response.classification = MagicMock()
-    mock_response.classification.action_types = ['read-only']
     mock_response.validation_failed = False
     mock_validate.return_value = mock_response
 

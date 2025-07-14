@@ -49,9 +49,7 @@ from typing import Annotated, Any, Optional, cast
 def _get_log_directory():
     """Get platform-appropriate log directory."""
     base_location = 'aws-api-mcp'
-    if os.name == 'nt':  # Windows
-        return Path(tempfile.gettempdir()) / base_location
-    elif os.uname().sysname == 'Darwin':  # macOS
+    if os.name == 'nt' or os.uname().sysname == 'Darwin':  # Windows and macOS
         return Path(tempfile.gettempdir()) / base_location
     # Linux
     base_dir = (

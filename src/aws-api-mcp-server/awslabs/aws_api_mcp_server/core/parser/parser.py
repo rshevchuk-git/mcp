@@ -43,6 +43,7 @@ from ..common.errors import (
     ParameterSchemaValidationError,
     ParameterValidationErrorRecord,
     RequestSerializationError,
+    ServiceNotAllowedError,
     ShortHandParserError,
     UnknownArgumentsError,
     UnknownFiltersError,
@@ -144,7 +145,7 @@ ALLOWED_FILTER_KEYS_SUBSETS = {
 
 
 class ParsedOperationArgs(NamedTuple):
-    """Named tuple to store parsed operation arguments and their classification."""
+    """Named tuple to store parsed operation arguments."""
 
     operation_args: Namespace
     supported_args: list[str]
@@ -348,7 +349,7 @@ def parse(cli_command: str) -> IRCommand:
         return _handle_service_command(service_command, global_args, remaining)
 
     if service_command.name in DENIED_CUSTOM_SERVICES:
-        raise InvalidServiceError(service_command.name)
+        raise ServiceNotAllowedError(service_command.name)
 
     return _handle_awscli_customization(global_args, remaining, tokens[0])
 

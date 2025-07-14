@@ -3,7 +3,6 @@ import botocore.exceptions
 import contextlib
 import datetime
 from .history_handler import history
-from awslabs.aws_api_mcp_server.core.common.models import ActionType
 from copy import deepcopy
 from unittest.mock import patch
 
@@ -15,10 +14,6 @@ CLOUD9_PARAMS_CLI_MISSING_CONTEXT = (
 )
 CLOUD9_PARAMS_MISSING_CONTEXT_FAILURES = {
     'validation_failures': None,
-    'classification': {
-        'api_type': 'management',
-        'action_types': [ActionType.UNKNOWN.value],
-    },
     'missing_context_failures': [
         {
             'reason': "The following parameters are missing for service 'cloud9' and operation 'create-environment-ec2': '--image-id'",
@@ -36,7 +31,6 @@ CLOUD9_PARAMS_MISSING_CONTEXT_FAILURES = {
 
 CLOUD9_PARAMS_CLI_NON_EXISTING_OPERATION = 'aws cloud9 list-environments-1'
 CLOUD9_PARAMS_CLI_VALIDATION_FAILURES = {
-    'classification': None,
     'validation_failures': [
         {
             'reason': "The operation 'list-environments-1' for service 'cloud9' does not exist.",

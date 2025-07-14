@@ -14,13 +14,13 @@
 import importlib.resources
 import json
 import requests
-from awslabs.aws_api_mcp_server.core.parser.classifier import METADATA_FILE
 from collections import defaultdict
 from loguru import logger
 from typing import List
 
 
 SERVICE_REFERENCE_URL = 'https://servicereference.us-east-1.amazonaws.com/'
+METADATA_FILE = 'data/api_metadata.json'
 DEFAULT_REQUEST_TIMEOUT = 5
 
 

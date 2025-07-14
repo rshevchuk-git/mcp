@@ -185,25 +185,6 @@ class InvalidServiceOperationError(CliParsingError):
         )
 
 
-class InvalidServiceRegionError(CommandValidationError):
-    """Thrown when the service is not available in the given region."""
-
-    _message = 'The service {!r} is not available in the given region {!r}.'
-
-    def __init__(self, service: str, region: str):
-        """Initialize InvalidServiceRegionError with service and region."""
-        message = self._message.format(service, region)
-        self._region = region
-        self._service = service
-        super().__init__(message)
-
-    def as_failure(self) -> Failure:
-        """Return a Failure object representing this error."""
-        return Failure(
-            reason=str(self), context={'service': self._service, 'region': self._region}
-        )
-
-
 class InvalidParametersReceivedError(CommandValidationError):
     """Thrown when the operation receives parameters it does not support."""
 

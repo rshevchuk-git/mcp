@@ -10,7 +10,7 @@ This MCP server is meant for testing, development, and evaluation purposes.
 
 
 ## Prerequisites
-- You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) for guidance. We recommend configuring your credentials using the `AWS_API_MCP_PROFILE_NAME` environment variable (see "Environment Variables" section below for details). If
+- You must have an AWS account with credentials properly configured. Please refer to the official documentation [here ↗](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) for guidance. We recommend configuring your credentials using the `AWS_API_MCP_PROFILE_NAME` environment variable (see [Configuration Options](#-configuration-options) section for details). If
 `AWS_API_MCP_PROFILE_NAME` is not specified, the system follows boto3's default credential selection order, in this case, if you have multiple AWS profiles configured on your machine, ensure the correct profile is prioritized in your credential chain.
 - Ensure you have Python 3.10 or newer installed. You can download it from the [official Python website](https://www.python.org/downloads/) or use a version manager such as [pyenv](https://github.com/pyenv/pyenv).
 - (Optional) Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for faster dependency management and improved Python environment handling.
@@ -45,7 +45,7 @@ pip install awslabs.aws-api-mcp-server
           ],
           "env": {
             "AWS_REGION": "us-east-1",
-            "AWS_API_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory"
+            "AWS_API_MCP_WORKING_DIR": "/path/to/working/directory"
           },
           "disabled": false,
           "autoApprove": []
@@ -68,7 +68,7 @@ pip install awslabs.aws-api-mcp-server
           ],
           "env": {
             "AWS_REGION": "us-east-1",
-            "AWS_API_MCP_WORKING_DIR": "C:\\path\\to\\working\\directory"
+            "AWS_API_MCP_WORKING_DIR": "/path/to/working/directory"
           },
           "disabled": false,
           "autoApprove": []
@@ -108,15 +108,14 @@ For detailed instructions on setting up your local development environment and r
 
 ## ⚙️ Configuration Options
 
-| Environment Variable | Required | Default | Description |
-|---------------------|----------|---------|-------------|
-| `AWS_REGION` | ✅ Yes | - | Default region for AWS CLI commands |
-| `AWS_API_MCP_WORKING_DIR` | ✅ Yes | - | Working directory path for the MCP server operations. Must be an absolute path. Used to resolve relative paths in commands like `aws s3 cp`. Does not provide any sandboxing or security restrictions |
-| `AWS_API_MCP_PROFILE_NAME` | ❌ No | `"default"` | AWS Profile for credentials to use for command executions. If not provided, the MCP server will follow the boto3's [default credentials chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) to look for credentials. We strongly recommend you to configure your credentials this way. |
-| `READ_OPERATIONS_ONLY` | ❌ No | `"false"` | Primarily IAM permissions are used to control if mutating actions are allowed, so defaulting to "false" to reduce friction. We keep this as a best effort attempt to recognize and further control read-only actions. When set to "true", restricts execution to read-only operations. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true". |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | ❌ No | - | Use environment variables to configure AWS credentials |
-| `AWS_API_MCP_TELEMETRY` | ❌ No | `"true"` | Allow sending additional telemetry data to AWS related to the server configuration. This includes:<br></br> - Whether the `call_aws()` tool is used with `READ_OPERATIONS_ONLY` set to true or false.<br></br>Note: Regardless of this setting, AWS obtains information about which operations were invoked and the server version as part of normal AWS service interactions; no additional telemetry calls are made by the server for this purpose. |
-
+| Environment Variable | Required | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------------------|----------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `AWS_REGION` | ✅ Yes | - | Default region for AWS CLI commands                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `AWS_API_MCP_WORKING_DIR` | ✅ Yes | - | Working directory path for the MCP server operations. Must be an absolute path. Used to resolve relative paths in commands like `aws s3 cp`. Does not provide any sandboxing or security restrictions                                                                                                                                                                                                                                                                        |
+| `AWS_API_MCP_PROFILE_NAME` | ❌ No | `"default"` | AWS Profile for credentials to use for command executions. If not provided, the MCP server will follow the boto3's [default credentials chain](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials) to look for credentials. We strongly recommend you to configure your credentials this way.                                                                                                                            |
+| `READ_OPERATIONS_ONLY` | ❌ No | `"false"` | When set to "true", restricts execution to read-only operations only. IAM permissions remain the primary security control. For a complete list of allowed operations under this flag, refer to the [Service Authorization Reference](https://docs.aws.amazon.com/service-authorization/latest/reference/reference_policies_actions-resources-contextkeys.html). Only operations where the **Access level** column is not `Write` will be allowed when this is set to "true". |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` | ❌ No | - | Use environment variables to configure AWS credentials                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `AWS_API_MCP_TELEMETRY` | ❌ No | `"true"` | Allow sending additional telemetry data to AWS related to the server configuration. This includes Whether the `call_aws()` tool is used with `READ_OPERATIONS_ONLY` set to true or false. Note: Regardless of this setting, AWS obtains information about which operations were invoked and the server version as part of normal AWS service interactions; no additional telemetry calls are made by the server for this purpose.                                            |
 
 ### 🚀 Quick Start
 
@@ -124,7 +123,7 @@ Once configured, you can ask your AI assistant questions such as:
 
 - **"List all my EC2 instances"**
 - **"Show me S3 buckets in us-west-2"**
-- **"Create a new security group for web servers"** *(Admin policy only)*
+- **"Create a new security group for web servers"** *(Only with write permission)*
 
 
 ## Features

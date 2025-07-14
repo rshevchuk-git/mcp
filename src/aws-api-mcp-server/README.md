@@ -161,29 +161,28 @@ Our MCP server aims to support all AWS APIs. However, some of them will spawn su
 | **emr** | `ssh`,  `sock`, `get`, `put` |
 | **opsworks** | `register` |
 
-### STDIO Mode and File System Access
+### File System Access and Operating Mode
 
-**Important**: This MCP server is intended to be used **only** in STDIO mode as a local server using a single user's credentials. The server runs with the same permissions as the user who started it and has the same file system access as that user.
+**Important**: This MCP server is intended for **STDIO mode only** as a local server using a single user's credentials. The server runs with the same permissions as the user who started it and has complete access to the file system.
 
-Key points to understand:
+#### Security and Access Considerations
 
-- **No Sandboxing**: The `AWS_API_MCP_WORKING_DIR` environment variable sets a working directory but does **not** provide any sandboxing or security restrictions. The MCP server can perform any file operation that the AWS CLI can, anywhere on the file system where the user has permissions.
-- **Full File System Access**: This MCP server can read from and write to any location on the file system that the user running it has access to. File paths are not restricted to the working directory.
-- **Host File System Sharing**: When using this MCP server, the host file system is directly accessible. Any file operations performed by AWS CLI commands will affect the actual host file system.
-- **Do Not Modify for Network Use**: Modifying this server to operate over a network can introduce additional security concerns and vulnerabilities. It is designed for local STDIO use only.
+- **No Sandboxing**: The `AWS_API_MCP_WORKING_DIR` environment variable sets a working directory but does **not** provide any security restrictions
+- **Full File System Access**: The server can read from and write to any location on the file system where the user has permissions
+- **No Confirmation Prompts**: Files can be modified, overwritten, or deleted without any additional user confirmation
+- **Host File System Sharing**: When using this server, the host file system is directly accessible
+- **Do Not Modify for Network Use**: This server is designed for local STDIO use only; network operation introduces additional security risks
 
-### File System Operations
+#### Common File Operations
 
-When executing commands that write files to the filesystem, please be aware that:
+The MCP server can perform various file operations through AWS CLI commands, including:
 
-1. **No Confirmation Prompts**: Existing files can be modified, overwritten, or deleted without any additional user confirmation, which may lead to data loss.
-2. **Unrestricted File Access**: The MCP server can write to any location on the file system where the user has permissions, not just within the working directory.
-3. **Common File Operations**: Many AWS CLI commands can write to the file system, including:
-   - `aws s3 sync` - Can overwrite entire directories of files without warning
-   - `aws s3 cp` - Can overwrite existing files without confirmation
-   - Any AWS CLI command using the `outfile` positional argument
-   - Commands that use the `file://` prefix to read from files
-4. **Working Directory**: The `AWS_API_MCP_WORKING_DIR` environment variable sets where the server starts but does not restrict where files can be written.
+- `aws s3 sync` - Can overwrite entire directories without warning
+- `aws s3 cp` - Can overwrite existing files without confirmation
+- Any AWS CLI command using the `outfile` parameter
+- Commands that use the `file://` prefix to read from files
+
+**Note**: While the `AWS_API_MCP_WORKING_DIR` environment variable sets where the server starts, it does not restrict where files can be written or accessed.
 
 ### Prompt Injection and Untrusted Data
 This MCP server executes AWS CLI commands as instructed by an AI model, which can be vulnerable to prompt injection attacks:

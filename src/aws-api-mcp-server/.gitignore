@@ -48,12 +48,15 @@ htmlcov/
 *.manifest
 *.spec
 .pybuilder/
-target/
 
-# Environments
-.env
-.env.local
-.env.*.local
+# Embeddings and models
+awslabs/aws_api_mcp_server/core/data/embeddings/.locks/
+awslabs/aws_api_mcp_server/core/data/embeddings/*.npz
+awslabs/aws_api_mcp_server/core/data/embeddings/models--*/
 
-# PyPI
-.pypirc
+# Workflow runtime data
+awslabs/aws_api_mcp_server/workflows_registry/executions/
+awslabs/aws_api_mcp_server/workflows_registry/compiled/*.json
+
+# Temporary scripts
+start_workflow_server.sh

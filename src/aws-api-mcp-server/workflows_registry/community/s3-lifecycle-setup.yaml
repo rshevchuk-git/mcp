@@ -1,0 +1,43 @@
+name: s3_lifecycle_setup
+version: "1.0"
+description: "Configure S3 bucket lifecycle rules for cost optimization"
+author: "poc-demo"
+tags: ["s3", "lifecycle", "cost-optimization", "storage"]
+
+parameters:
+  - name: bucket_name
+    type: string
+    required: true
+    description: "S3 bucket name to configure"
+  - name: transition_days
+    type: integer
+    required: false
+    default: 30
+    description: "Days after which to transition to IA storage"
+
+steps:
+  - id: verify_bucket
+    type: command
+    intent: "check if S3 bucket exists and get its configuration"
+    context:
+      service: s3
+      bucket_name: "${params.bucket_name}"
+    timeout: 30
+    
+  - id: configure_lifecycle
+    type: command
+    intent: "set up S3 bucket lifecycle configuration for cost optimization"
+    context:
+      service: s3
+      bucket_name: "${params.bucket_name}"
+      transition_days: "${params.transition_days}"
+    depends_on: [verify_bucket]
+    timeout: 60
+
+security:
+  required_permissions:
+    - "s3:GetBucketLocation"
+    - "s3:GetLifecycleConfiguration"
+    - "s3:PutLifecycleConfiguration"
+  max_duration: 180
+  tier: "community"

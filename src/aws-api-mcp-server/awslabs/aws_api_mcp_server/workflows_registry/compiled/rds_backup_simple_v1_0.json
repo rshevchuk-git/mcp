@@ -1,0 +1,69 @@
+{
+  "version": "1.0",
+  "format": "aws-mcp-bytecode",
+  "workflow_id": "rds_backup_simple_v1_0",
+  "checksum": "2e44c1173b05b4dcbe276a6dffde446f37ec5cf7ecdb2e66abdad12fd80efb08",
+  "metadata": {
+    "name": "rds_backup_simple",
+    "version": "1.0",
+    "description": "Create RDS snapshot with basic validation",
+    "author": "poc-demo",
+    "created_at": "2025-07-17T21:32:29.685328",
+    "tags": [
+      "rds",
+      "backup",
+      "snapshot",
+      "database"
+    ]
+  },
+  "parameters": {
+    "instance_id": {
+      "type": "string",
+      "required": true,
+      "default": null,
+      "description": "RDS instance identifier"
+    },
+    "snapshot_suffix": {
+      "type": "string",
+      "required": false,
+      "default": "poc-snapshot",
+      "description": "Suffix to add to the snapshot name"
+    }
+  },
+  "execution_plan": [
+    {
+      "step_id": "validate_instance",
+      "type": "command",
+      "timeout": 60,
+      "intent": "describe RDS instance to verify it exists",
+      "context": {
+        "service": "rds",
+        "instance_id": "${params.instance_id}"
+      }
+    },
+    {
+      "step_id": "create_snapshot",
+      "type": "command",
+      "timeout": 120,
+      "intent": "create RDS snapshot for database instance",
+      "context": {
+        "service": "rds",
+        "instance_id": "${params.instance_id}",
+        "snapshot_id": "${params.instance_id}-${params.snapshot_suffix}"
+      },
+      "depends_on": [
+        "validate_instance"
+      ]
+    }
+  ],
+  "required_permissions": [
+    "rds:DescribeDBInstances",
+    "rds:CreateDBSnapshot"
+  ],
+  "security": {
+    "tier": "community",
+    "max_duration": 600,
+    "validated": true,
+    "risk_score": 2.5
+  }
+}

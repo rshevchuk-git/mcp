@@ -15,6 +15,7 @@
 import os
 import sys
 import tempfile
+import asyncio
 from .core.aws.driver import translate_cli_to_ir
 from .core.aws.service import (
     execute_awscli_customization,
@@ -38,12 +39,17 @@ from .core.common.models import (
 )
 from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
+from .workflows.discovery import discovery
+from .workflows.executor import executor
+from .workflows.storage import initialize_storage
+from .workflows.compiler import compiler
+from .workflows.models import WorkflowSuggestion
 from botocore.exceptions import NoCredentialsError
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
 from pathlib import Path
 from pydantic import Field
-from typing import Annotated, Any, Optional, cast
+from typing import Annotated, Any, Optional, cast, List
 
 
 def _get_log_directory():
@@ -271,6 +277,140 @@ async def call_aws(
         )
 
 
+@server.tool(
+    name='suggest_workflows',
+    description="""Discover AWS workflows based on natural language queries. This tool helps you find reusable, 
+    community-contributed workflows that accomplish common AWS tasks through multiple coordinated steps.
+
+    Use this tool when:
+    1. You want to find existing workflows for common AWS operations
+    2. The user describes a multi-step AWS task that might have a pre-built workflow
+    3. You need to explore available automation options
+    4. The user asks about AWS best practices or common patterns
+
+    Examples of good queries:
+    - "backup my RDS database"
+    - "set up monitoring for EC2 instances"
+    - "configure S3 lifecycle policies"
+    - "audit security groups"
+    - "deploy a web application"
+
+    Returns:
+        A list of relevant workflows with descriptions, required parameters, and permissions needed.
+    """,
+)
+async def suggest_workflows(
+    query: Annotated[
+        str,
+        Field(
+            description="Natural language description of the AWS task or workflow you're looking for"
+        ),
+    ],
+    ctx: Context,
+    max_results: Annotated[
+        int,
+        Field(description="Maximum number of workflow suggestions to return"),
+    ] = 5,
+) -> List[dict] | AwsApiMcpServerErrorResponse:
+    """Suggest workflows based on the provided query."""
+    if not query.strip():
+        error_message = 'Empty query provided'
+        await ctx.error(error_message)
+        return AwsApiMcpServerErrorResponse(detail=error_message)
+    
+    try:
+        suggestions = await discovery.suggest_workflows(query, max_results)
+        
+        # Convert to dict format for MCP response
+        result = []
+        for suggestion in suggestions:
+            result.append({
+                "workflow_id": suggestion.workflow_id,
+                "name": suggestion.name,
+                "description": suggestion.description,
+                "author": suggestion.author,
+                "similarity": suggestion.similarity,
+                "required_permissions": suggestion.required_permissions,
+                "parameters": [
+                    {
+                        "name": param.name,
+                        "type": param.type,
+                        "required": param.required,
+                        "description": param.description
+                    }
+                    for param in suggestion.parameters
+                ]
+            })
+        
+        logger.info(f"Found {len(result)} workflow suggestions for query: {query}")
+        return result
+        
+    except Exception as e:
+        error_message = f'Error while suggesting workflows: {str(e)}'
+        await ctx.error(error_message)
+        return AwsApiMcpServerErrorResponse(detail=error_message)
+
+
+@server.tool(
+    name='execute_workflow',
+    description="""Execute a compiled AWS workflow with the specified parameters. Workflows are executed 
+    deterministically using pre-compiled bytecode to ensure security and consistency.
+
+    Key features:
+    - Deterministic execution from immutable bytecode
+    - Parameter validation and type checking
+    - Step-by-step execution with logging
+    - Integration with existing AWS CLI tools
+    - Security boundary enforcement
+
+    The workflow will execute each step in sequence, using suggest_aws_commands and call_aws 
+    for actual AWS operations. All steps are logged and results are tracked.
+
+    Returns:
+        Detailed execution results including step-by-step progress, command outputs, and final status.
+    """,
+)
+async def execute_workflow(
+    workflow_id: Annotated[
+        str,
+        Field(description="ID of the compiled workflow to execute")
+    ],
+    parameters: Annotated[
+        dict,
+        Field(description="Parameters required by the workflow")
+    ],
+    ctx: Context,
+    execution_mode: Annotated[
+        str,
+        Field(description="Execution mode: 'step_by_step' for detailed logging"),
+    ] = "step_by_step",
+) -> dict | AwsApiMcpServerErrorResponse:
+    """Execute a workflow with the given parameters."""
+    try:
+        # Execute the workflow
+        execution = await executor.execute_workflow(workflow_id, parameters, execution_mode)
+        
+        # Return execution results
+        result = {
+            "execution_id": execution.execution_id,
+            "workflow_id": execution.workflow_id,
+            "status": execution.status,
+            "parameters": execution.parameters,
+            "step_results": execution.step_results,
+            "started_at": execution.started_at.isoformat(),
+            "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+            "error_message": execution.error_message
+        }
+        
+        logger.info(f"Workflow execution {execution.execution_id} completed with status: {execution.status}")
+        return result
+        
+    except Exception as e:
+        error_message = f'Error while executing workflow: {str(e)}'
+        await ctx.error(error_message)
+        return AwsApiMcpServerErrorResponse(detail=error_message)
+
+
 def main():
     """Main entry point for the AWS API MCP server."""
     global READ_OPERATIONS_INDEX
@@ -299,6 +439,24 @@ def main():
         knowledge_base.setup()
     except Exception as e:
         error_message = f'Error while setting up the knowledge base: {str(e)}'
+        logger.error(error_message)
+        raise RuntimeError(error_message)
+
+    # Initialize workflow storage
+    try:
+        workflows_dir = Path(__file__).parent / "workflows_registry"
+        initialize_storage(workflows_dir)
+        logger.info(f"Initialized workflow storage at: {workflows_dir}")
+        
+        # Register call_aws with executor
+        executor.register_tool("call_aws", call_aws)
+        logger.info("Registered call_aws tool with workflow executor")
+        
+        # Index workflows for discovery
+        asyncio.create_task(discovery.index_workflows())
+        logger.info("Started indexing workflows for discovery")
+    except Exception as e:
+        error_message = f'Error while initializing workflow storage: {str(e)}'
         logger.error(error_message)
         raise RuntimeError(error_message)
 

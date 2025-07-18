@@ -1,0 +1,67 @@
+name: s3_lifecycle_policy
+version: "1.0"
+description: "Configure S3 bucket lifecycle policies for cost optimization"
+author: "poc-demo"
+tags: ["s3", "lifecycle", "storage", "cost-optimization"]
+
+parameters:
+  - name: bucket_name
+    type: string
+    required: true
+    description: "S3 bucket name"
+  
+  - name: standard_days
+    type: integer
+    required: false
+    default: 30
+    description: "Days to keep objects in STANDARD storage class"
+  
+  - name: glacier_days
+    type: integer
+    required: false
+    default: 90
+    description: "Days to transition objects to GLACIER storage class"
+  
+  - name: expiration_days
+    type: integer
+    required: false
+    default: 365
+    description: "Days until object expiration"
+
+steps:
+  - id: validate_bucket
+    type: command
+    intent: "check if S3 bucket exists"
+    context:
+      service: s3
+      bucket: "${params.bucket_name}"
+    timeout: 60
+    
+  - id: get_current_lifecycle
+    type: command
+    intent: "get current lifecycle configuration for S3 bucket"
+    context:
+      service: s3
+      bucket: "${params.bucket_name}"
+    depends_on: [validate_bucket]
+    timeout: 60
+    
+  - id: put_lifecycle_policy
+    type: command
+    intent: "put lifecycle configuration on S3 bucket with transition to glacier and expiration"
+    context:
+      service: s3
+      bucket: "${params.bucket_name}"
+      standard_days: "${params.standard_days}"
+      glacier_days: "${params.glacier_days}"
+      expiration_days: "${params.expiration_days}"
+    depends_on: [get_current_lifecycle]
+    timeout: 120
+
+security:
+  required_permissions:
+    - "s3:GetBucketLifecycleConfiguration"
+    - "s3:PutBucketLifecycleConfiguration"
+    - "s3:HeadBucket"
+  max_duration: 300
+  tier: "community"

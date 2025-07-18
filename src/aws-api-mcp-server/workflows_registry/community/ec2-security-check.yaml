@@ -1,0 +1,37 @@
+name: ec2_security_check
+version: "1.0"
+description: "Check EC2 instances and their security groups for basic security compliance"
+author: "poc-demo"
+tags: ["ec2", "security", "compliance", "audit"]
+
+parameters:
+  - name: region
+    type: string
+    required: false
+    default: "us-east-1"
+    description: "AWS region to check"
+
+steps:
+  - id: list_instances
+    type: command
+    intent: "list all EC2 instances in region"
+    context:
+      service: ec2
+      region: "${params.region}"
+    timeout: 60
+    
+  - id: check_security_groups
+    type: command
+    intent: "describe security groups for EC2 instances"
+    context:
+      service: ec2
+      region: "${params.region}"
+    depends_on: [list_instances]
+    timeout: 120
+
+security:
+  required_permissions:
+    - "ec2:DescribeInstances"
+    - "ec2:DescribeSecurityGroups"
+  max_duration: 300
+  tier: "community"

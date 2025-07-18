@@ -1,0 +1,37 @@
+name: rds_backup_simple
+version: "1.0"
+description: "Create RDS snapshot with basic validation"
+author: "poc-demo"
+tags: ["rds", "backup", "database", "snapshot"]
+
+parameters:
+  - name: instance_id
+    type: string
+    required: true
+    description: "RDS instance identifier to backup"
+
+steps:
+  - id: validate_instance
+    type: command
+    intent: "describe RDS instance to verify it exists"
+    context:
+      service: rds
+      instance_id: "${params.instance_id}"
+    timeout: 60
+    
+  - id: create_snapshot
+    type: command
+    intent: "create RDS snapshot for database instance"
+    context:
+      service: rds
+      instance_id: "${params.instance_id}"
+      snapshot_id: "${params.instance_id}-poc-backup"
+    depends_on: [validate_instance]
+    timeout: 300
+
+security:
+  required_permissions:
+    - "rds:DescribeDBInstances"
+    - "rds:CreateDBSnapshot"
+  max_duration: 600
+  tier: "community"

@@ -48,6 +48,7 @@ class KnowledgeBase:
                 raise FileNotFoundError(
                     'No embeddings file found. You can generate them by running: python -m awslabs.aws_api_mcp_server.scripts.generate_embeddings'
                 )
+        # Load model on-demand for workflow execution
         self._load_model_in_background()
 
     def _load_model_in_background(self):

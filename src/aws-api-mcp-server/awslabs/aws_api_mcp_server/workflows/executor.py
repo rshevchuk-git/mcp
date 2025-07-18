@@ -41,7 +41,8 @@ class WorkflowExecutor:
         self, 
         workflow_id: str, 
         parameters: Dict[str, Any],
-        execution_mode: str = "step_by_step"
+        execution_mode: str = "step_by_step",
+        ctx = None
     ) -> WorkflowExecution:
         """Execute a compiled workflow."""
         try:
@@ -69,7 +70,7 @@ class WorkflowExecutor:
             
             # Execute steps
             try:
-                await self._execute_steps(workflow, execution)
+                await self._execute_steps(workflow, execution, ctx)
                 execution.status = "completed"
                 execution.completed_at = datetime.utcnow()
                 logger.info(f"Workflow execution completed: {execution.execution_id}")
@@ -107,7 +108,7 @@ class WorkflowExecutor:
                 elif expected_type == "integer" and not isinstance(value, int):
                     raise ValueError(f"Parameter {param_name} must be an integer")
     
-    async def _execute_steps(self, workflow: CompiledWorkflow, execution: WorkflowExecution) -> None:
+    async def _execute_steps(self, workflow: CompiledWorkflow, execution: WorkflowExecution, ctx=None) -> None:
         """Execute workflow steps in order."""
         for step in workflow.execution_plan:
             step_id = step["step_id"]
@@ -118,7 +119,7 @@ class WorkflowExecutor:
             try:
                 # Execute the step based on its type
                 if step["type"] == "command":
-                    result = await self._execute_command_step(step, execution)
+                    result = await self._execute_command_step(step, execution, ctx)
                 elif step["type"] == "wait":
                     result = await self._execute_wait_step(step, execution)
                 else:
@@ -132,7 +133,7 @@ class WorkflowExecutor:
                 logger.error(f"Step {step_id} failed: {e}")
                 raise
     
-    async def _execute_command_step(self, step: Dict[str, Any], execution: WorkflowExecution) -> Dict[str, Any]:
+    async def _execute_command_step(self, step: Dict[str, Any], execution: WorkflowExecution, ctx=None) -> Dict[str, Any]:
         """Execute a command step using suggest_aws_commands + call_aws."""
         intent = step.get("intent")
         context = step.get("context", {})
@@ -166,7 +167,11 @@ class WorkflowExecutor:
             raise RuntimeError("call_aws tool not registered")
         
         call_aws_func = self.tool_functions['call_aws']
-        result = await call_aws_func(command)
+        # Pass context if available (for MCP call_aws function)
+        if ctx is not None:
+            result = await call_aws_func(command, ctx)
+        else:
+            result = await call_aws_func(command)
         
         return {
             "command": command,

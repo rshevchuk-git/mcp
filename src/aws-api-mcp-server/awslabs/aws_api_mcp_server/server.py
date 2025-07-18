@@ -40,7 +40,7 @@ from .core.common.models import (
 from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
 from .workflows.discovery import discovery
-from .workflows.executor import executor
+from .workflows.stateless_executor import stateless_executor
 from .workflows.storage import initialize_storage
 from .workflows.compiler import compiler
 from .workflows.models import WorkflowSuggestion
@@ -352,63 +352,46 @@ async def suggest_workflows(
 
 
 @server.tool(
-    name='execute_workflow',
-    description="""Execute a compiled AWS workflow with the specified parameters. Workflows are executed 
-    deterministically using pre-compiled bytecode to ensure security and consistency.
+    name='get_workflow_plan',
+    description="""Get the execution plan for a compiled AWS workflow. This is a stateless operation that 
+    returns the workflow steps with parameters substituted, allowing the host agent to orchestrate execution.
 
     Key features:
-    - Deterministic execution from immutable bytecode
-    - Parameter validation and type checking
-    - Step-by-step execution with logging
-    - Integration with existing AWS CLI tools
-    - Security boundary enforcement
-
-    The workflow will execute each step in sequence, using suggest_aws_commands and call_aws 
-    for actual AWS operations. All steps are logged and results are tracked.
+    - Stateless operation - no execution state maintained
+    - Parameter substitution in step definitions
+    - Dependency information for proper ordering
+    - Security validation of workflow bytecode
 
     Returns:
-        Detailed execution results including step-by-step progress, command outputs, and final status.
+        Workflow plan with resolved steps and metadata for agent-driven execution.
     """,
 )
-async def execute_workflow(
+async def get_workflow_plan(
     workflow_id: Annotated[
         str,
-        Field(description="ID of the compiled workflow to execute")
+        Field(description="ID of the compiled workflow to get plan for")
     ],
     parameters: Annotated[
         dict,
-        Field(description="Parameters required by the workflow")
+        Field(description="Parameters to substitute into the workflow plan")
     ],
     ctx: Context,
-    execution_mode: Annotated[
-        str,
-        Field(description="Execution mode: 'step_by_step' for detailed logging"),
-    ] = "step_by_step",
 ) -> dict | AwsApiMcpServerErrorResponse:
-    """Execute a workflow with the given parameters."""
+    """Get the execution plan for a workflow."""
     try:
-        # Execute the workflow
-        execution = await executor.execute_workflow(workflow_id, parameters, execution_mode)
+        # Get workflow plan
+        plan = await stateless_executor.get_workflow_plan(workflow_id, parameters)
         
-        # Return execution results
-        result = {
-            "execution_id": execution.execution_id,
-            "workflow_id": execution.workflow_id,
-            "status": execution.status,
-            "parameters": execution.parameters,
-            "step_results": execution.step_results,
-            "started_at": execution.started_at.isoformat(),
-            "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
-            "error_message": execution.error_message
-        }
-        
-        logger.info(f"Workflow execution {execution.execution_id} completed with status: {execution.status}")
-        return result
+        logger.info(f"Retrieved workflow plan for {workflow_id} with {len(plan['steps'])} steps")
+        return plan
         
     except Exception as e:
-        error_message = f'Error while executing workflow: {str(e)}'
+        error_message = f'Error while getting workflow plan: {str(e)}'
         await ctx.error(error_message)
         return AwsApiMcpServerErrorResponse(detail=error_message)
+
+
+
 
 
 def main():
@@ -448,13 +431,10 @@ def main():
         initialize_storage(workflows_dir)
         logger.info(f"Initialized workflow storage at: {workflows_dir}")
         
-        # Register call_aws with executor
-        executor.register_tool("call_aws", call_aws)
-        logger.info("Registered call_aws tool with workflow executor")
+                # Note: Removed stateless_executor.register_tool - we now call call_aws directly
         
-        # Index workflows for discovery
-        asyncio.create_task(discovery.index_workflows())
-        logger.info("Started indexing workflows for discovery")
+        # Workflow indexing will happen lazily on first query
+        logger.info("Workflow discovery initialized - indexing will happen on first query")
     except Exception as e:
         error_message = f'Error while initializing workflow storage: {str(e)}'
         logger.error(error_message)

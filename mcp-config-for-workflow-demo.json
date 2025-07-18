@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "aws-api-workflow-poc": {
+      "command": "python",
+      "args": [
+        "-m",
+        "awslabs.aws_api_mcp_server.server"
+      ],
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "AWS_API_MCP_WORKING_DIR": "/tmp/aws-workflow-demo",
+        "PYTHONPATH": "${workspaceFolder}/src/aws-api-mcp-server",
+        "FASTMCP_LOG_LEVEL": "DEBUG"
+      },
+      "cwd": "${workspaceFolder}/src/aws-api-mcp-server",
+      "disabled": false,
+      "autoApprove": ["suggest_workflows", "execute_workflow"]
+    }
+  }
+}

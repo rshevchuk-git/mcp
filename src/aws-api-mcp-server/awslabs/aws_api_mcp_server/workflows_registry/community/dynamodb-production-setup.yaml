@@ -1,0 +1,64 @@
+name: dynamodb_production_setup
+version: "1.0"
+description: "Create DynamoDB table with backup configuration and monitoring setup"
+author: "aws-mcp-workflows"
+tags: ["dynamodb", "backup", "monitoring", "production"]
+
+parameters:
+  - name: table_name
+    type: string
+    required: true
+    description: "DynamoDB table name"
+  
+  - name: region
+    type: string
+    required: false
+    default: "us-east-1"
+    description: "AWS region for the table"
+  
+  - name: billing_mode
+    type: string
+    required: false
+    default: "PAY_PER_REQUEST"
+    description: "Billing mode for the table (PAY_PER_REQUEST or PROVISIONED)"
+
+steps:
+  - id: create_table
+    type: command
+    intent: "create DynamoDB table with on-demand billing and primary key"
+    context:
+      service: dynamodb
+      table_name: "${params.table_name}"
+      billing_mode: "${params.billing_mode}"
+      region: "${params.region}"
+    timeout: 180
+    
+  - id: enable_point_in_time_recovery
+    type: command
+    intent: "enable DynamoDB point-in-time recovery for backup protection"
+    context:
+      service: dynamodb
+      table_name: "${params.table_name}"
+      region: "${params.region}"
+    depends_on: [create_table]
+    timeout: 60
+    
+  - id: create_initial_backup
+    type: command
+    intent: "create DynamoDB table backup for initial baseline"
+    context:
+      service: dynamodb
+      table_name: "${params.table_name}"
+      backup_name: "${params.table_name}-initial-backup"
+      region: "${params.region}"
+    depends_on: [enable_point_in_time_recovery]
+    timeout: 120
+
+security:
+  required_permissions:
+    - "dynamodb:CreateTable"
+    - "dynamodb:UpdateContinuousBackups"
+    - "dynamodb:CreateBackup"
+    - "dynamodb:DescribeTable"
+  max_duration: 900
+  tier: "community" 

@@ -283,10 +283,8 @@ async def call_aws(
     community-contributed workflows that accomplish common AWS tasks through multiple coordinated steps.
 
     Use this tool when:
-    1. You want to find existing workflows for common AWS operations
-    2. The user describes a multi-step AWS task that might have a pre-built workflow
-    3. You need to explore available automation options
-    4. The user asks about AWS best practices or common patterns
+    1. The task at hand requires multiple AWS CLI commands to complete in sequence
+    2. The task can be achieved with a number of different AWS CLI commands
 
     Examples of good queries:
     - "backup my RDS database"

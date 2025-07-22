@@ -1,0 +1,85 @@
+name: cost_analysis_report
+version: "1.0"
+description: "Analyze current infrastructure costs and provide optimization recommendations"
+author: "aws-mcp-workflows"
+tags: ["cost", "pricing", "optimization", "analysis", "reporting"]
+
+parameters:
+  - name: service_name
+    type: string
+    required: true
+    description: "AWS service to analyze (e.g., EC2, RDS, DynamoDB)"
+  
+  - name: region
+    type: string
+    required: false
+    default: "us-east-1"
+    description: "AWS region for cost analysis"
+  
+  - name: time_period_days
+    type: integer
+    required: false
+    default: 30
+    description: "Number of days to analyze for cost trends"
+  
+  - name: resource_filter
+    type: string
+    required: false
+    description: "Resource filter (instance ID, table name, etc.) for focused analysis"
+
+steps:
+  - id: get_service_pricing
+    type: command
+    intent: "get current AWS pricing information for the specified service"
+    context:
+      service: pricing
+      service_code: "${params.service_name}"
+      region: "${params.region}"
+    timeout: 120
+    
+  - id: get_usage_metrics
+    type: command
+    intent: "get CloudWatch usage metrics and resource utilization data"
+    context:
+      service: cloudwatch
+      metric_namespace: "AWS/${params.service_name}"
+      resource_filter: "${params.resource_filter}"
+      time_period: "${params.time_period_days}"
+      region: "${params.region}"
+    depends_on: [get_service_pricing]
+    timeout: 180
+    
+  - id: get_cost_data
+    type: command
+    intent: "get AWS Cost Explorer data for service spending analysis"
+    context:
+      service: ce
+      service_name: "${params.service_name}"
+      time_period: "${params.time_period_days}"
+      granularity: "DAILY"
+      region: "${params.region}"
+    depends_on: [get_usage_metrics]
+    timeout: 120
+    
+  - id: generate_recommendations
+    type: command
+    intent: "analyze cost data and generate optimization recommendations report"
+    context:
+      service: support
+      case_type: "cost-optimization"
+      service_name: "${params.service_name}"
+      region: "${params.region}"
+      analysis_period: "${params.time_period_days}"
+    depends_on: [get_cost_data]
+    timeout: 90
+
+security:
+  required_permissions:
+    - "pricing:GetProducts"
+    - "pricing:GetAttributeValues"
+    - "cloudwatch:GetMetricData"
+    - "cloudwatch:GetMetricStatistics"
+    - "ce:GetCostAndUsage"
+    - "ce:GetUsageReport"
+  max_duration: 900
+  tier: "community" 

@@ -2,13 +2,13 @@
   "version": "1.0",
   "format": "aws-mcp-bytecode",
   "workflow_id": "rds_backup_simple_v1_0",
-  "checksum": "2e44c1173b05b4dcbe276a6dffde446f37ec5cf7ecdb2e66abdad12fd80efb08",
+  "checksum": "b2135116e912cfbe2a80c5d2a0c25e7d3a1c0f4e18204c7512c34ac71dff80c0",
   "metadata": {
     "name": "rds_backup_simple",
     "version": "1.0",
     "description": "Create RDS snapshot with basic validation",
     "author": "poc-demo",
-    "created_at": "2025-07-17T21:32:29.685328",
+    "created_at": "2025-07-22T07:53:20.507757",
     "tags": [
       "rds",
       "backup",

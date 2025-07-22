@@ -1,0 +1,84 @@
+name: cloudwatch_monitoring_stack
+version: "1.0"
+description: "Setup comprehensive CloudWatch monitoring with dashboards and alarms"
+author: "aws-mcp-workflows"
+tags: ["cloudwatch", "monitoring", "alarms", "dashboard"]
+
+parameters:
+  - name: resource_name
+    type: string
+    required: true
+    description: "Name of the AWS resource to monitor (e.g., EC2 instance ID, DynamoDB table name)"
+  
+  - name: resource_type
+    type: string
+    required: true
+    description: "Type of AWS resource (ec2, dynamodb, rds, etc.)"
+  
+  - name: region
+    type: string
+    required: false
+    default: "us-east-1"
+    description: "AWS region for monitoring setup"
+  
+  - name: notification_email
+    type: string
+    required: false
+    description: "Email address for alarm notifications (optional)"
+
+steps:
+  - id: create_log_group
+    type: command
+    intent: "create CloudWatch log group for centralized logging"
+    context:
+      service: logs
+      log_group_name: "/aws/${params.resource_type}/${params.resource_name}"
+      region: "${params.region}"
+    timeout: 60
+    
+  - id: create_dashboard
+    type: command
+    intent: "create CloudWatch dashboard for monitoring metrics and visualizations"
+    context:
+      service: cloudwatch
+      dashboard_name: "${params.resource_name}-monitoring"
+      resource_type: "${params.resource_type}"
+      resource_name: "${params.resource_name}"
+      region: "${params.region}"
+    depends_on: [create_log_group]
+    timeout: 120
+    
+  - id: create_cpu_alarm
+    type: command
+    intent: "create CloudWatch alarm for high CPU utilization monitoring"
+    context:
+      service: cloudwatch
+      alarm_name: "${params.resource_name}-high-cpu"
+      resource_type: "${params.resource_type}"
+      resource_name: "${params.resource_name}"
+      threshold: 80
+      region: "${params.region}"
+    depends_on: [create_dashboard]
+    timeout: 90
+    
+  - id: create_sns_topic
+    type: command
+    intent: "create SNS topic for alarm notifications"
+    context:
+      service: sns
+      topic_name: "${params.resource_name}-alerts"
+      email: "${params.notification_email}"
+      region: "${params.region}"
+    depends_on: [create_cpu_alarm]
+    timeout: 60
+
+security:
+  required_permissions:
+    - "logs:CreateLogGroup"
+    - "logs:PutRetentionPolicy"
+    - "cloudwatch:PutDashboard"
+    - "cloudwatch:PutMetricAlarm"
+    - "sns:CreateTopic"
+    - "sns:Subscribe"
+  max_duration: 600
+  tier: "community" 

@@ -1,0 +1,80 @@
+name: rds_backup_with_notifications
+version: "1.0"
+description: "Create RDS snapshot with SNS notifications for backup status"
+author: "aws-mcp-workflows"
+tags: ["rds", "backup", "snapshot", "notifications", "sns"]
+
+parameters:
+  - name: instance_id
+    type: string
+    required: true
+    description: "RDS instance identifier"
+  
+  - name: snapshot_suffix
+    type: string
+    required: false
+    default: "scheduled-backup"
+    description: "Suffix to add to the snapshot name"
+  
+  - name: notification_topic_arn
+    type: string
+    required: false
+    description: "SNS topic ARN for notifications (optional)"
+  
+  - name: region
+    type: string
+    required: false
+    default: "us-east-1"
+    description: "AWS region for the RDS instance"
+
+steps:
+  - id: validate_instance
+    type: command
+    intent: "describe RDS instance to verify it exists and get its status"
+    context:
+      service: rds
+      instance_id: "${params.instance_id}"
+      region: "${params.region}"
+    timeout: 60
+    
+  - id: create_snapshot
+    type: command
+    intent: "create RDS database snapshot for backup"
+    context:
+      service: rds
+      instance_id: "${params.instance_id}"
+      snapshot_id: "${params.instance_id}-${params.snapshot_suffix}"
+      region: "${params.region}"
+    depends_on: [validate_instance]
+    timeout: 300
+    
+  - id: wait_for_snapshot
+    type: command
+    intent: "wait for RDS snapshot to complete and verify status"
+    context:
+      service: rds
+      snapshot_id: "${params.instance_id}-${params.snapshot_suffix}"
+      region: "${params.region}"
+    depends_on: [create_snapshot]
+    timeout: 1800
+    
+  - id: send_notification
+    type: command
+    intent: "send SNS notification about backup completion status"
+    context:
+      service: sns
+      topic_arn: "${params.notification_topic_arn}"
+      message: "RDS backup completed for ${params.instance_id}"
+      subject: "RDS Backup Status"
+      region: "${params.region}"
+    depends_on: [wait_for_snapshot]
+    timeout: 30
+
+security:
+  required_permissions:
+    - "rds:DescribeDBInstances"
+    - "rds:CreateDBSnapshot" 
+    - "rds:DescribeDBSnapshots"
+    - "sns:Publish"
+  max_duration: 2400
+  tier: "community" 

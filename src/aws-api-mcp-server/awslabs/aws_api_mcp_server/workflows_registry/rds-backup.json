@@ -1,0 +1,42 @@
+{
+  "description": "Create RDS snapshot with validation and error handling",
+  "name": "rds_backup",
+  "short_description": "Create RDS snapshot with validation and error handling",
+  "steps": [
+    {
+      "description": "Verify RDS instance exists and is available",
+      "name": "validate_instance",
+      "tool_parameter_hints": {
+        "action": "describe-db-instances",
+        "parameters": {
+          "DBInstanceIdentifier": "${params.instance_id}"
+        },
+        "service": "rds"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Create RDS snapshot for the specified instance",
+      "name": "create_snapshot",
+      "tool_parameter_hints": {
+        "action": "create-db-snapshot",
+        "parameters": {
+          "DBInstanceIdentifier": "${params.instance_id}",
+          "DBSnapshotIdentifier": "${params.instance_id}-${params.snapshot_suffix}-${timestamp()}"
+        },
+        "service": "rds"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Wait for snapshot to complete if requested",
+      "name": "wait_for_snapshot",
+      "tool_parameter_hints": {
+        "check_interval": 30,
+        "condition": "${params.wait_for_completion}",
+        "timeout": 1800
+      },
+      "use_tool": "wait"
+    }
+  ]
+}

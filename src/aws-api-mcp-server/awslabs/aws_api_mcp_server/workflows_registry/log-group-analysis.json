@@ -1,0 +1,111 @@
+{
+  "description": "Analyze a CloudWatch log group for anomalies, message patterns, and error patterns within a specified time window. This workflow discovers anomaly detectors, retrieves anomalies, and identifies common patterns in log data.",
+  "name": "log_group_analysis",
+  "short_description": "Analyze a CloudWatch log group for anomalies, message patterns, and error patterns within a specified time window. This workflow discovers anomaly detectors, retrieves anomalies, and identifies common patterns in log data.",
+  "steps": [
+    {
+      "description": "Get AWS Account ID",
+      "name": "get_account_id",
+      "tool_parameter_hints": {
+        "command": "aws sts get-caller-identity --region ${region}"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "List log anomaly detectors associated with the specified log group ARN",
+      "name": "list_anomaly_detectors",
+      "tool_parameter_hints": {
+        "command": "aws logs list-log-anomaly-detectors --filter-log-group-arn ${log_group_arn} --region ${region}",
+        "log_group_arn": "Construct log group arn from account id and log group name"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "For each anomaly detector found, list anomalies that are unsuppressed",
+      "name": "list_anomalies",
+      "tool_parameter_hints": {
+        "anomaly_detector_arn": "Get ARNs from the result of the previous step",
+        "command": "aws logs list-anomalies --anomaly-detector-arn ${steps.list_anomaly_detectors.result.anomalyDetectors[0].anomalyDetectorArn} --suppression-state UNSUPPRESSED --region ${region}"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Filter anomalies to only include those that overlap with the specified time range",
+      "name": "filter_applicable_anomalies",
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Start CloudWatch Logs Insights query to find top 5 most common message patterns",
+      "name": "start_pattern_query",
+      "tool_parameter_hints": {
+        "command": "aws logs start-query --log-group-identifiers ${log_group_arn} --start-time ${start_timestamp} --end-time ${end_timestamp} --query-string 'pattern @message | sort @sampleCount desc | limit 5' --limit 5 --region ${region}",
+        "end_time": "Get end time from the result of the previous step",
+        "log_group_arn": "You should now have the log group arn from step 2",
+        "query_string": "pattern @message | sort @sampleCount desc | limit 5",
+        "start_time": "Get start time from the result of the previous step"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Start CloudWatch Logs Insights query to find top 5 patterns containing error-related terms",
+      "name": "start_error_pattern_query",
+      "tool_parameter_hints": {
+        "command": "aws logs start-query --log-group-identifiers ${log_group_arn} --start-time ${start_timestamp} --end-time ${end_timestamp} --query-string 'fields @timestamp, @message | filter @message like /(?i)(error|exception|fail|timeout|fatal)/ | pattern @message | limit 5' --limit 5 --region ${region}",
+        "end_time": "Get end time from the result of the previous step",
+        "log_group_arn": "You should now have the log group arn from step 2",
+        "query_string": "fields @timestamp, @message | filter @message like /(?i)(error|exception|fail|timeout|fatal)/ | pattern @message | limit 5",
+        "start_time": "Get start time from the result of the previous step"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Wait for the pattern query to complete and retrieve results",
+      "name": "get_pattern_query_results",
+      "tool_parameter_hints": {
+        "command": "aws logs get-query-results --query-id ${steps.start_pattern_query.result.queryId} --region ${region}",
+        "query_id": "Get query id from the result of the previous steps"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Wait for the error pattern query to complete and retrieve results",
+      "name": "get_error_pattern_query_results",
+      "tool_parameter_hints": {
+        "command": "aws logs get-query-results --query-id ${steps.start_error_pattern_query.result.queryId} --region ${region}",
+        "query_id": "Get query id from the result of the previous steps"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Poll for pattern query completion if not already complete",
+      "name": "poll_pattern_query",
+      "tool_parameter_hints": {
+        "command": "aws logs get-query-results --query-id ${steps.start_pattern_query.result.queryId} --region ${region}",
+        "query_id": "Get query id from the result of the previous steps"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Poll for error pattern query completion if not already complete",
+      "name": "poll_error_pattern_query",
+      "tool_parameter_hints": {
+        "command": "aws logs get-query-results --query-id ${steps.start_error_pattern_query.result.queryId} --region ${region}",
+        "query_id": "Get query id from the result of the previous steps"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Clean up pattern results by removing unnecessary fields and formatting",
+      "name": "clean_pattern_results",
+      "tool_parameter_hints": {
+        "error_pattern_results": "Get results from the result of the previous steps",
+        "pattern_results": "Get results from the result of the previous steps"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "Compile final analysis results including anomaly detectors, anomalies, and pattern queries",
+      "name": "compile_analysis_results"
+    }
+  ]
+}

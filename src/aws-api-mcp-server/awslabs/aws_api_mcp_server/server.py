@@ -38,6 +38,7 @@ from .core.common.models import (
 )
 from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
+from .core.workflows.registry import get_workflows_registry
 from botocore.exceptions import NoCredentialsError
 from loguru import logger
 from mcp.server.fastmcp import Context, FastMCP
@@ -137,6 +138,9 @@ async def suggest_aws_commands(
 @server.tool(
     name='call_aws',
     description=f"""Execute AWS CLI commands with validation and proper error handling. This is the PRIMARY tool to use when you are confident about the exact AWS CLI command needed to fulfill a user's request. Always prefer this tool over 'suggest_aws_commands' when you have a specific command in mind.
+
+    **IMPORTANT: Before using this tool, check if the user's request matches any available workflows using get_workflow_plan first.**"
+
     Key points:
     - The command MUST start with "aws" and follow AWS CLI syntax
     - Commands are executed in {DEFAULT_REGION} region by default
@@ -255,6 +259,42 @@ async def call_aws(
         return AwsApiMcpServerErrorResponse(
             detail=error_message,
         )
+
+
+@server.tool(
+    name='get_workflow_plan',
+    description=f"""Get the execution plan for a compiled AWS workflow. This tool provides structured, step-by-step guidance for complex AWS operations that have been pre-compiled into workflows.
+When a user request matches a workflow intent, you MUST always prefer this tool over direct AWS CLI calls (i.e. call_aws tool) as it provides more robust, tested procedures.
+
+Below you can find the list of available workflows in the format — workflow_id : description
+{get_workflows_registry().pretty_print_workflows()}
+
+If you want to get the execution plan for a specific workflow, you MUST call this tool with the specific workflow_id.
+
+Returns:
+    - Detailed workflow plan. You MUST read ALL instructions in the script and obey each one. Do NOT skip ANY steps. If instructions contradict one another, you MUST inform the user for human intervention.
+""",
+)
+async def get_workflow_plan(
+    workflow_id: Annotated[str, Field(description='ID of the workflow to get plan for')],
+    ctx: Context,
+) -> dict | AwsApiMcpServerErrorResponse:
+    """Get the execution plan for a workflow or list available workflows."""
+    try:
+        workflow = get_workflows_registry().get_workflow(workflow_id)
+
+        if not workflow:
+            error_message = f'Workflow {workflow_id} not found'
+            logger.error(error_message)
+            raise ValueError(error_message)
+
+        logger.info(f'Retrieved workflow plan for {workflow_id} with {len(workflow.steps)} steps')
+        return workflow.model_dump()
+
+    except Exception as e:
+        error_message = f'Error while getting workflow plan: {str(e)}'
+        await ctx.error(error_message)
+        return AwsApiMcpServerErrorResponse(detail=error_message)
 
 
 def main():

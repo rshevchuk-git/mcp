@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-2020-12/schema#",
+  "additionalProperties": false,
+  "description": "Schema for AWS MCP workflow definitions in JSON format",
+  "properties": {
+    "description": {
+      "description": "Full workflow description, describes the workflow in detail and adds additional context.",
+      "maxLength": 1000,
+      "minLength": 1,
+      "type": "string"
+    },
+    "name": {
+      "description": "Unique name, identifier for the workflow (no whitespace allowed)",
+      "maxLength": 100,
+      "minLength": 1,
+      "pattern": "^[^\\s]+$",
+      "type": "string"
+    },
+    "short_description": {
+      "description": "Concise description of what the workflow intent, and what it does. Based on this LLM will decide if the workflow is a good fit for the user's request.",
+      "maxLength": 250,
+      "minLength": 1,
+      "type": "string"
+    },
+    "steps": {
+      "description": "List of steps to follow to complete the workflow. Each step is a single action that can be executed by the LLM.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "description": "Natural language description of what the step does",
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "Step title",
+            "minLength": 1,
+            "type": "string"
+          },
+          "tool_parameter_hints": {
+            "default": {},
+            "description": "Hints for LLM to generate correct parameters for the tool call.",
+            "type": "object"
+          },
+          "use_tool": {
+            "default": "call_aws",
+            "description": "Tool to use for this step",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "short_description",
+    "description",
+    "steps"
+  ],
+  "title": "AWS API MCP Workflow Schema",
+  "type": "object"
+}

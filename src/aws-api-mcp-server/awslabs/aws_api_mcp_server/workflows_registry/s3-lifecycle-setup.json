@@ -1,0 +1,26 @@
+{
+  "description": "Configure S3 bucket lifecycle rules for cost optimization",
+  "name": "s3_lifecycle_setup",
+  "short_description": "Configure S3 bucket lifecycle rules for cost optimization and data retention policies. This workflow automates the setup of transition rules to move objects between storage tiers, implements expiration policies for automatic deletion, and establishes.",
+  "steps": [
+    {
+      "description": "check if S3 bucket exists and get its configuration",
+      "name": "verify_bucket",
+      "tool_parameter_hints": {
+        "bucket_name": "${params.bucket_name}",
+        "service": "s3"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "set up S3 bucket lifecycle configuration for cost optimization",
+      "name": "configure_lifecycle",
+      "tool_parameter_hints": {
+        "bucket_name": "${params.bucket_name}",
+        "service": "s3",
+        "transition_days": "${params.transition_days}"
+      },
+      "use_tool": "call_aws"
+    }
+  ]
+}

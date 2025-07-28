@@ -34,8 +34,6 @@ class WorkflowsRegistry:
                 data = json.load(f)
             self.workflows[data['name']] = Workflow(**data)
 
-        print(self.pretty_print_workflows())
-
     def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
         """Get a workflow from file."""
         if workflow_id not in self.workflows:

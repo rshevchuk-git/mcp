@@ -22,6 +22,7 @@ from .core.aws.service import (
     is_operation_read_only,
     validate,
 )
+from .core.cameos.loader import CameoLoader
 from .core.common.config import (
     DEFAULT_REGION,
     FASTMCP_LOG_LEVEL,
@@ -40,8 +41,8 @@ from .core.kb import knowledge_base
 from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_read_only_operations
 from .core.workflows.registry import get_workflows_registry
 from botocore.exceptions import NoCredentialsError
+from fastmcp import Context, FastMCP
 from loguru import logger
-from mcp.server.fastmcp import Context, FastMCP
 from pydantic import Field
 from typing import Annotated, Any, Optional, cast
 
@@ -299,7 +300,7 @@ async def get_workflow_plan(
 
 def main():
     """Main entry point for the AWS API MCP server."""
-    global READ_OPERATIONS_INDEX
+    global READ_OPERATIONS_INDEX, EXTERNAL_TOOL_LOADER
 
     if not WORKING_DIRECTORY:
         error_message = 'AWS_API_MCP_WORKING_DIR environment variable is not defined.\n'
@@ -332,7 +333,11 @@ def main():
     if READ_OPERATIONS_ONLY_MODE:
         READ_OPERATIONS_INDEX = get_read_only_operations()
 
-    server.run(transport='stdio')
+    logger.info('Adding cameos...')
+    CameoLoader(server).add_cameos()
+
+    logger.info('Starting the server...')
+    server.run(transport='stdio', show_banner=False)
 
 
 if __name__ == '__main__':

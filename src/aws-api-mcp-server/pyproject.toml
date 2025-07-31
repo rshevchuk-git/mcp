@@ -22,6 +22,8 @@ dependencies = [
     "loguru>=0.7.3",
     "importlib_resources>=6.0.0",
     "requests>=2.32.4",
+    "jsonschema>=4.21.0",
+    "fastmcp>=2.10.3"
 ]
 license = {text = "Apache-2.0"}
 license-files = ["LICENSE", "NOTICE" ]

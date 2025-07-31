@@ -44,6 +44,7 @@ from .core.metadata.read_only_operations_list import ReadOnlyOperations, get_rea
 from .core.workflows.registry import get_workflows_registry
 from botocore.exceptions import NoCredentialsError
 from fastmcp import Context, FastMCP
+from fastmcp.types import ToolAnnotations
 from loguru import logger
 from pydantic import Field
 from typing import Annotated, Any, Optional, cast

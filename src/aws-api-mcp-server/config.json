@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "aws-mcp": {
+      "args": [
+        "--directory",
+        "/Users/rshev/Desktop/Projects/mcp/rshevchuk-awslabs/mcp/src/aws-api-mcp-server/awslabs/aws_api_mcp_server",
+        "run",
+        "awslabs.aws-api-mcp-server"
+      ],
+      "autoApprove": [],
+      "command": "uv",
+      "disabled": false,
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "FASTMCP_LOG_LEVEL": "INFO"
+      },
+      "timeout": 60,
+      "type": "stdio"
+    }
+  }
+}

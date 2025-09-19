@@ -1,0 +1,25 @@
+{
+  "description": "Check EC2 instances and their security groups for basic security compliance",
+  "name": "ec2_security_check",
+  "short_description": "Check EC2 instances and security groups for compliance",
+  "steps": [
+    {
+      "description": "list all EC2 instances in region",
+      "name": "list_instances",
+      "tool_parameter_hints": {
+        "region": "${params.region}",
+        "service": "ec2"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "describe security groups for EC2 instances",
+      "name": "check_security_groups",
+      "tool_parameter_hints": {
+        "region": "${params.region}",
+        "service": "ec2"
+      },
+      "use_tool": "call_aws"
+    }
+  ]
+}

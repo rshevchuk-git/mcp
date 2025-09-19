@@ -1,0 +1,29 @@
+{
+  "cameos": [
+    {
+      "args": {
+        "urls": "https://knowledge-mcp.global.api.aws"
+      },
+      "description": "AWS Knowledge MCP Server",
+      "name": "AWS Knowledge",
+      "tools": [
+        "aws___read_documentation"
+      ],
+      "type": "streamable-http"
+    },
+    {
+      "args": {
+        "args": [
+          "awslabs.cloudwatch-mcp-server@latest"
+        ],
+        "command": "uvx"
+      },
+      "description": "CloudWatch MCP Server",
+      "name": "CloudWatch",
+      "tools": [
+        "get_active_alarms"
+      ],
+      "type": "stdio"
+    }
+  ]
+}

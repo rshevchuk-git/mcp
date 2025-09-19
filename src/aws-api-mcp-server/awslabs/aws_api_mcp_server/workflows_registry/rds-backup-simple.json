@@ -1,0 +1,26 @@
+{
+  "description": "Create RDS snapshot with basic validation",
+  "name": "rds_backup_simple",
+  "short_description": "Create RDS snapshot with basic validation",
+  "steps": [
+    {
+      "description": "describe RDS instance to verify it exists",
+      "name": "validate_instance",
+      "tool_parameter_hints": {
+        "instance_id": "${params.instance_id}",
+        "service": "rds"
+      },
+      "use_tool": "call_aws"
+    },
+    {
+      "description": "create RDS snapshot for database instance",
+      "name": "create_snapshot",
+      "tool_parameter_hints": {
+        "instance_id": "${params.instance_id}",
+        "service": "rds",
+        "snapshot_id": "${params.instance_id}-backup"
+      },
+      "use_tool": "call_aws"
+    }
+  ]
+}
